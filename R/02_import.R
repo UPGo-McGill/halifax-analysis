@@ -28,10 +28,10 @@ HRM_streets <-
 
 con <- RPostgres::dbConnect(
   RPostgres::Postgres(),
-  dbname = "airdna",
-  host = "025wpgs.campus.mcgill.ca",
   user = "charlottebelot",
-  password = "iR7AXqmyKmChXCtFMMjyzjbH")
+  password = "iR7AXqmyKmChXCtFMMjyzjbH",
+  host = "025wpgs.campus.mcgill.ca",
+  dbname = "airdna")
 
 property_all <- tbl(con, "property")
 daily_all <- tbl(con, "daily_old")
@@ -176,10 +176,10 @@ GH <-
 
 ### Save files #################################################################
 
-save(TO, file = "data/TO.Rdata")
-save(TO_streets, file = "data/TO_streets.Rdata")
-save(property, file = "data/TO_property.Rdata")
-save(LTM_property, file = "data/TO_LTM_property.Rdata")
-save(GH, file = "data/TO_GH.Rdata")
-save(FREH, file = "data/TO_FREH.Rdata")
-save(daily, file = "data/TO_daily.Rdata")
+save(HRM, file = "data/HRM.Rdata")
+save(HRM_streets, file = "data/HRM_streets.Rdata")
+save(property, file = "data/HRM_property.Rdata")
+save(LTM_property, file = "data/HRM_LTM_property.Rdata")
+save(GH, file = "data/HRM_GH.Rdata")
+save(FREH, file = "data/HRM_FREH.Rdata")
+save(daily, file = "data/HRM_daily.Rdata")
