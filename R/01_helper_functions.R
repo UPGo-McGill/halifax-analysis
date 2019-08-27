@@ -1,4 +1,4 @@
-#### TORONTO LIBRARIES AND HELPER FUNCTIONS ####################################
+#### HALIFAX LIBRARIES AND HELPER FUNCTIONS ####################################
 
 ### Libraries ##################################################################
 
