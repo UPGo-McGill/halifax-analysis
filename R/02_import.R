@@ -38,7 +38,7 @@ daily_all <- tbl(con, "daily_old")
 
 property <- 
   property_all %>% 
-  filter(city == "Toronto") %>% 
+  filter(city == "Haifax") %>% 
   collect()
 
 daily <- 
