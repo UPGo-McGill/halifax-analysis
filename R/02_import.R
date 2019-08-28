@@ -10,7 +10,7 @@ HRM <-
   st_transform(32617)
 
 streets <- 
-  (getbb("Halifax") * c(1.01, 0.99, 0.99, 1.01)) %>% 
+  (getbb("Halifax Nova Scotia") * c(1.01, 0.99, 0.99, 1.01)) %>% 
   opq(timeout = 200) %>% 
   add_osm_feature(key = "highway", value = c("secondary", "tertiary")) %>% 
   osmdata_sf()
