@@ -23,6 +23,14 @@ HRM_streets <-
   st_intersection(HRM) %>% 
   select(osm_id, name, geometry)
 
+neighbourhoods <-
+  read_sf(dsn = "data", layer = "halifax")%>%
+  st_transform(32617) %>% 
+  select(neighbourhood = OLD_DIST, geometry)
+
+gapply(neighbourhoods, neighbourhood, st_union())
+
+
 
 ### Import data from server ####################################################
 
