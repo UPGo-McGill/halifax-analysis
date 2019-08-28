@@ -13,6 +13,7 @@ library(scales)
 library(parallel)
 library(pbapply)
 library(osmdata)
+library(data.table)
 
 
 ### Helper functions ###########################################################
