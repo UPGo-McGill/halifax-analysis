@@ -438,7 +438,7 @@ housing %>%
          `v_CA16_4897: Total - Tenant households in non-farm, non-reserve private dwellings - 25% sample data`) %>% 
   set_names(c("Dwellings", "Tenants")) %>% 
   pull(Tenants) %>% 
-  {. * 1.011 * 0.011}
+  {. * 1.016 * 0.016}
 
 
 ### Listings likely in violation of principal residence requirement ############
