@@ -218,7 +218,7 @@ var <- filter(property, created <= "2019-04-30", scraped >= "2019-04-30",
 nrows <- 20
 df <- expand.grid(y = 1:20, x = 1:20)
 categ_table <- round(table(var) * ((20*20)/(length(var))))
-categ_table <- c(39, 206, 104, 36, 11, 4)
+categ_table <- c(23, 135, 130, 78, 25, 9)
 names(categ_table) <- c("0 (studio)", "1",  "2", "3", "4", "5+")
 df$category <- factor(rep(names(categ_table), categ_table))  
 
