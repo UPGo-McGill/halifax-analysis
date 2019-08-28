@@ -41,7 +41,7 @@ property <-
   filter(city == "Halifax Regional Municipality") %>% 
   collect()
 
-daily <- 
+daily_compressed <- 
   daily_all %>% 
   filter(property_ID %in% !! property$property_ID) %>% 
   collect()
@@ -67,12 +67,12 @@ rm(con, daily_all, property_all)
 property <- 
   property %>% 
   filter(!is.na(listing_type)) %>% 
-  select(property_ID:longitude, ab_property:ha_host) %>% 
+  select(property_ID:longitude, ab_property:ha_host, bedrooms) %>% 
   st_as_sf(coords = c("longitude", "latitude"), crs = 4326) %>%
   st_transform(32617)
 
 daily <- 
-  strr_expand_daily(daily, cores = 4)
+  strr_expand_daily(daily_compressed, cores = 4)
 
 daily <- 
   property %>% 

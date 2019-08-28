@@ -429,7 +429,7 @@ sum(filter(housing_loss, date == "2019-04-30")$`Housing units`) /
 ## Relate housing loss to rental vacancy rate
 
 housing <- 
-  get_census("CA16", regions = list(CSD = "3520005"), level = "CSD", 
+  get_census("CA16", regions = list(CSD = "1209034"), level = "CSD", 
              vectors = c("v_CA16_4897", "v_CA16_405"))
 
 housing %>% 
