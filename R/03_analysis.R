@@ -9,6 +9,7 @@ load("data/HRM_GH.Rdata")
 load("data/HRM_daily.Rdata")
 load("data/HRM_streets.Rdata")
 load("data/HRM.Rdata")
+load("data/HRM_daily_compressed.Rdata")
 
 
 
@@ -204,7 +205,7 @@ property %>%
 
 ### Bedroom breakdown ##########################################################
 
-property_db %>% 
+property %>% 
   filter(created <= "2019-04-30", scraped >= "2019-04-30", housing == TRUE,
          listing_type == "Entire home/apt") %>% 
   count(bedrooms) %>% 
@@ -212,7 +213,7 @@ property_db %>%
 
 
 
-var <- filter(property_db, created <= "2019-04-30", scraped >= "2019-04-30", 
+var <- filter(property, created <= "2019-04-30", scraped >= "2019-04-30", 
               housing == TRUE, listing_type == "Entire home/apt")$bedrooms
 nrows <- 20
 df <- expand.grid(y = 1:20, x = 1:20)
@@ -234,11 +235,11 @@ bedroom_graph <-
         axis.text = element_blank(),
         axis.title = element_blank(),
         axis.ticks = element_blank(),
-        legend.position = "bottom",
-        legend.title = element_text(family = "Futura", face = "bold",
-                                    size = 10),
-        legend.text = element_text(family = "Futura", size = 10)
-  )
+        legend.position = "bottom")
+     #   legend.title = element_text(family = "Futura", face = "bold",
+         #                           size = 10),
+      #  legend.text = element_text(family = "Futura", size = 10)
+ # )
 
 ggsave("output/figure_4.pdf", plot = bedroom_graph, width = 8, 
        height = 5, units = "in", useDingbats = FALSE)

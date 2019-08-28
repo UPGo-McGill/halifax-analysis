@@ -115,7 +115,7 @@ ML_daily <-
 
 ML_daily <- 
   ML_property %>% 
-  select(property_ID, host_ID, listing_type, created, scraped, housing) %>% 
+  select(property_ID, host_ID, listing_type, created, scraped, housing, bedrooms) %>% 
   inner_join(ML_daily, .)
 
 ML_daily <- 
@@ -183,3 +183,4 @@ save(LTM_property, file = "data/HRM_LTM_property.Rdata")
 save(GH, file = "data/HRM_GH.Rdata")
 save(FREH, file = "data/HRM_FREH.Rdata")
 save(daily, file = "data/HRM_daily.Rdata")
+save(daily_compressed, file = "data/HRM_daily_compressed.Rdata")
