@@ -10,13 +10,13 @@ HRM <-
   st_transform(32617)
 
 streets <- 
-  (getbb("Halifax") * c(1.01, 0.99, 0.99, 1.01)) %>% 
+  (getbb("Halifax Nova Scotia") * c(1.01, 0.99, 0.99, 1.01)) %>% 
   opq(timeout = 200) %>% 
   add_osm_feature(key = "highway", value = c("secondary", "tertiary")) %>% 
   osmdata_sf()
 
 HRM_streets <- 
-  rbind(streets$osm_polygons %>% st_cast("LINESTRING"),streets$osm_lines) %>% 
+  rbind(streets$osm_polygons %>% st_cast("LINESTRING"), streets$osm_lines) %>% 
   as_tibble() %>% 
   st_as_sf() %>% 
   st_transform(32617) %>%
@@ -28,8 +28,8 @@ HRM_streets <-
 
 con <- RPostgres::dbConnect(
   RPostgres::Postgres(),
-  user = "charlottebelot",
-  password = "iR7AXqmyKmChXCtFMMjyzjbH",
+  user = "amybolt",
+  password = "",
   host = "025wpgs.campus.mcgill.ca",
   dbname = "airdna")
 
@@ -38,7 +38,7 @@ daily_all <- tbl(con, "daily_old")
 
 property <- 
   property_all %>% 
-  filter(city == "Haifax") %>% 
+  filter(city == "Halifax Regional Municipality") %>% 
   collect()
 
 daily <- 

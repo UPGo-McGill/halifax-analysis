@@ -13,6 +13,8 @@ library(scales)
 library(parallel)
 library(pbapply)
 library(osmdata)
+library(data.table)
+library(ggplot2)
 
 
 ### Helper functions ###########################################################

@@ -37,10 +37,30 @@ nrow(filter(property, created <= "2019-04-30", scraped >= "2019-04-30"))
 # Housing listings
 nrow(LTM_property)
 
+# Listing type breakdown
+nrow(filter(LTM_property, listing_type == "Shared room"))/
+nrow(LTM_property)
+
 # Number of hosts on April 30, 2019
 length(unique(LTM_property$host_ID))
 
+# Hosts by listing type
+LTM_property %>% 
+  filter(listing_type == "Shared room") %>% 
+  select(host_ID) %>% 
+  st_drop_geometry() %>% 
+  unique() %>% 
+  nrow()/
+length(unique(LTM_property$host_ID))
+
 # LTM revenue
+sum(LTM_property$revenue, na.rm = TRUE)
+
+# LTM revenue by property type
+filter(LTM_property, listing_type == "Shared room") %>% 
+  select(revenue) %>% 
+  st_drop_geometry() %>% 
+  sum(na.rm = TRUE) /
 sum(LTM_property$revenue, na.rm = TRUE)
 
 # YOY growth rate
@@ -56,222 +76,30 @@ active_listings_graph <-
   theme_minimal() +
   scale_y_continuous(name = NULL, label = comma) +
   theme_minimal() +
-  scale_x_date(name = NULL) +
-  theme(text = element_text(family = "Futura"))
+  scale_x_date(name = NULL)
+#+
+ #theme(text = element_text(family = "Futura"))
 
 ggsave("output/figure_1.pdf", plot = active_listings_graph, width = 8, 
        height = 5, units = "in", useDingbats = FALSE)
 
 
-## Canadian active listings and graph
-
-Canada_population <- 
-  get_census("CA16", regions = list(C = "01"), level = "CSD") %>% 
-  filter(str_starts(`Region Name`, "Toronto|Montréal|Vancouver|Calgary|Ottawa"),
-         Population > 300000)
-
-
-property %>% 
-  filter(housing == TRUE, created <= "2019-04-30", scraped >= "2019-04-30") %>% 
-  nrow() %>% 
-  {. / Canada_population[3,]$`Population` * 1000}
-
-# Montreal
-
-property_Montreal <- property_MTL
-
-daily_Montreal <- 
-  strr_expand_daily(daily_compressed_MTL, cores = 4)
-
-daily_Montreal <- 
-  property_Montreal %>% 
-  select(property_ID, host_ID, listing_type, created, scraped, housing) %>% 
-  left_join(daily_Montreal, .) %>% 
-  filter(date >= created, date - 30 <= scraped, status != "U") %>% 
-  mutate(city = "Montreal")
-
-daily_Montreal <- 
-  strr_expand_daily(daily_compressed_Montreal, cores = 4)
-
-daily_Montreal <- 
-  property_Montreal %>% 
-  select(property_ID, host_ID, listing_type, created, scraped, housing) %>% 
-  left_join(daily_Montreal, .) %>% 
-  filter(date >= created, date - 30 <= scraped, status != "U") %>% 
-  mutate(city = "Montreal")
-
-Montreal_info <- list()
-Montreal_info[[1]] <- 
-  property_Montreal %>% 
-  filter(housing == TRUE, created <= "2019-04-30", scraped >= "2019-04-30") %>% 
-  nrow()
-Montreal_info[[2]] <- 
-  Montreal_info[[1]] / Canada_population[1,]$`Population` * 1000
-Montreal_info[[3]] <- 
-  daily_Montreal %>% 
-  filter(housing == TRUE, status == "R", date >= "2018-05-01") %>% 
-  pull(price) %>% 
-  sum()
-Montreal_info[[4]] <- 
-  Montreal_info[[3]] / Montreal_info[[1]]
-
-# Vancouver
-
-property_Vancouver <- property_VAN
-
-daily_Vancouver <- 
-  strr_expand_daily(daily_compressed_VAN, cores = 4)
-
-daily_Vancouver <- 
-  property_Vancouver %>% 
-  select(property_ID, host_ID, listing_type, created, scraped, housing) %>% 
-  left_join(daily_Vancouver, .) %>% 
-  filter(date >= created, date - 30 <= scraped, status != "U") %>% 
-  mutate(city = "Vancouver")
-
-daily_Vancouver <- 
-  strr_expand_daily(daily_compressed_Vancouver, cores = 4)
-
-daily_Vancouver <- 
-  property_Vancouver %>% 
-  select(property_ID, host_ID, listing_type, created, scraped, housing) %>% 
-  left_join(daily_Vancouver, .) %>% 
-  filter(date >= created, date - 30 <= scraped, status != "U") %>% 
-  mutate(city = "Vancouver")
-
-Vancouver_info <- list()
-Vancouver_info[[1]] <- 
-  property_Vancouver %>% 
-  filter(housing == TRUE, created <= "2019-04-30", scraped >= "2019-04-30") %>% 
-  nrow()
-Vancouver_info[[2]] <- 
-  Vancouver_info[[1]] / Canada_population[5,]$`Population` * 1000
-Vancouver_info[[3]] <- 
-  daily_Vancouver %>% 
-  filter(housing == TRUE, status == "R", date >= "2018-05-01") %>% 
-  pull(price) %>% 
-  sum()
-Vancouver_info[[4]] <- 
-  Vancouver_info[[3]] / Vancouver_info[[1]]
-
-# Ottawa
-
-daily_Ottawa <- 
-  strr_expand_daily(daily_compressed_Ottawa, cores = 4)
-
-daily_Ottawa <- 
-  property_Ottawa %>% 
-  select(property_ID, host_ID, listing_type, created, scraped, housing) %>% 
-  left_join(daily_Ottawa, .) %>% 
-  filter(date >= created, date - 30 <= scraped, status != "U") %>% 
-  mutate(city = "Ottawa")
-
-daily_Ottawa <- 
-  strr_expand_daily(daily_compressed_Ottawa, cores = 4)
-
-daily_Ottawa <- 
-  property_Ottawa %>% 
-  select(property_ID, host_ID, listing_type, created, scraped, housing) %>% 
-  left_join(daily_Ottawa, .) %>% 
-  filter(date >= created, date - 30 <= scraped, status != "U") %>% 
-  mutate(city = "Ottawa")
-
-Ottawa_info <- list()
-Ottawa_info[[1]] <- 
-  property_Ottawa %>% 
-  filter(housing == TRUE, created <= "2019-04-30", scraped >= "2019-04-30") %>% 
-  nrow()
-Ottawa_info[[2]] <- 
-  Ottawa_info[[1]] / Canada_population[2,]$`Population` * 1000
-Ottawa_info[[3]] <- 
-  daily_Ottawa %>% 
-  filter(housing == TRUE, status == "R", date >= "2018-05-01") %>% 
-  pull(price) %>% 
-  sum()
-Ottawa_info[[4]] <- 
-  Ottawa_info[[3]] / Ottawa_info[[1]]
-
-# Calgary
-
-daily_Calgary <- 
-  strr_expand_daily(daily_compressed_Calgary, cores = 4)
-
-daily_Calgary <- 
-  property_Calgary %>% 
-  select(property_ID, host_ID, listing_type, created, scraped, housing) %>% 
-  left_join(daily_Calgary, .) %>% 
-  filter(date >= created, date - 30 <= scraped, status != "U") %>% 
-  mutate(city = "Calgary")
-
-daily_Calgary <- 
-  strr_expand_daily(daily_compressed_Calgary, cores = 4)
-
-daily_Calgary <- 
-  property_Calgary %>% 
-  select(property_ID, host_ID, listing_type, created, scraped, housing) %>% 
-  left_join(daily_Calgary, .) %>% 
-  filter(date >= created, date - 30 <= scraped, status != "U") %>% 
-  mutate(city = "Calgary")
-
-Calgary_info <- list()
-Calgary_info[[1]] <- 
-  property_Calgary %>% 
-  filter(housing == TRUE, created <= "2019-04-30", scraped >= "2019-04-30") %>% 
-  nrow()
-Calgary_info[[2]] <- 
-  Calgary_info[[1]] / Canada_population[4,]$`Population` * 1000
-Calgary_info[[3]] <- 
-  daily_Calgary %>% 
-  filter(housing == TRUE, status == "R", date >= "2018-05-01") %>% 
-  pull(price) %>% 
-  sum()
-Calgary_info[[4]] <- 
-  Calgary_info[[3]] / Calgary_info[[1]]
-
-Canada_daily <- 
-  daily %>% 
-  select(-ML) %>% 
-  mutate(city = "Toronto") %>% 
-  bind_rows(daily_Montreal, daily_Vancouver, daily_Ottawa, daily_Calgary) %>% 
-  filter(housing == TRUE)
-
-Canada_graph <- 
-  Canada_daily %>% 
-  count(date, city) %>% 
-  ggplot() +
-  geom_line(aes(date, n, colour = city), size = 1.5) +
-  theme_minimal() +
-  scale_y_continuous(name = NULL, label = scales::comma) +
-  scale_x_date(name = NULL, limits = c(as.Date("2016-01-01"), NA)) +
-  scale_colour_manual(name = "City", 
-                      values = c("#4295A8", "#B4656F", "#C7F2A7", "#96897B",
-                                 "#DFD5A5")) +
-  theme(text = element_text(family = "Futura"),
-        legend.title = element_text(family = "Futura", face = "bold", 
-                                    size = 10),
-        legend.text = element_text(family = "Futura", size = 10),
-        legend.position = "bottom")
-
-ggsave("output/figure_2.pdf", plot = Canada_graph, width = 8, 
-       height = 5, units = "in", useDingbats = FALSE)
-
-
-
 ### Spatial distribution of listings ###########################################
-
+exchange_rate <- mean(1.2873,	1.3129, 1.3130, 1.3041, 1.3037, 1.3010, 1.3200,
+                      1.3432, 1.3301, 1.3206, 1.3368, 1.3378)
 ## Map
 
 property_in_HRM <-
   property %>% 
   select(-revenue) %>% 
-  st_intersection(st_buffer(TO, 250))
+  st_intersection(st_buffer(HRM, 250))
 
 property_2016 <- 
   daily %>% 
   filter(status == "R", date >= "2015-05-01", date <= "2016-04-30") %>% 
   group_by(property_ID) %>% 
-  summarize(revenue = sum(price)) %>% 
-  left_join(filter(property_in_TO, housing == TRUE), .) %>% 
+  summarize(revenue = sum(price) * exchange_rate) %>% 
+  left_join(filter(property_in_HRM, housing == TRUE), .) %>% 
   mutate(Year = "2016") %>% 
   filter(revenue > 0)
 
@@ -279,8 +107,8 @@ property_2017 <-
   daily %>% 
   filter(status == "R", date >= "2016-05-01", date <= "2017-04-30") %>% 
   group_by(property_ID) %>% 
-  summarize(revenue = sum(price)) %>% 
-  left_join(filter(property_in_TO, housing == TRUE), .) %>% 
+  summarize(revenue = sum(price) * exchange_rate) %>% 
+  left_join(filter(property_in_HRM, housing == TRUE), .) %>% 
   mutate(Year = "2017") %>% 
   filter(revenue > 0)
 
@@ -288,8 +116,8 @@ property_2018 <-
   daily %>% 
   filter(status == "R", date >= "2017-05-01", date <= "2018-04-30") %>% 
   group_by(property_ID) %>% 
-  summarize(revenue = sum(price)) %>% 
-  left_join(filter(property_in_TO, housing == TRUE), .) %>% 
+  ssummarize(revenue = sum(price) * exchange_rate) %>% 
+  left_join(filter(property_in_HRM, housing == TRUE), .) %>% 
   mutate(Year = "2018") %>% 
   filter(revenue > 0)
 
@@ -297,8 +125,8 @@ property_2019 <-
   daily %>% 
   filter(status == "R", date >= "2018-05-01", date <= "2019-04-30") %>% 
   group_by(property_ID) %>% 
-  summarize(revenue = sum(price)) %>% 
-  left_join(filter(property_in_TO, housing == TRUE), .) %>% 
+  summarize(revenue = sum(price) * exchange_rate) %>% 
+  left_join(filter(property_in_HRM, housing == TRUE), .) %>% 
   mutate(Year = "2019") %>% 
   filter(revenue > 0)
 
@@ -326,12 +154,12 @@ map <-
         axis.ticks = element_blank(),
         axis.text.x = element_blank(),
         axis.text.y = element_blank(),
-        rect = element_blank(),
+        rect = element_blank())
         #text = element_text(family = "Futura", face = "plain"),
-        legend.title = element_text(family = "Futura", face = "bold", 
-                                    size = 10),
-        legend.text = element_text(family = "Futura", size = 10),
-        strip.text = element_text(family = "Futura", face = "bold", size = 12)) 
+        # legend.title = element_text(family = "Futura", face = "bold", 
+        #                           size = 10),
+        #legend.text = element_text(family = "Futura", size = 10),
+        #strip.text = element_text(family = "Futura", face = "bold", size = 12)) 
 
 ggsave("output/figure_3.pdf", plot = map, width = 8, height = 9, units = "in",
        useDingbats = FALSE)
@@ -738,3 +566,195 @@ res_length <-
 
 mean(res_length$nights >= 28)
 
+
+# ## Canadian active listings and graph
+
+Canada_population <- 
+  get_census("CA16", regions = list(C = "01"), level = "CSD") %>% 
+  filter(str_starts(`Region Name`, "Toronto|Montréal|Vancouver|Calgary|Ottawa"),
+         Population > 300000)
+
+
+property %>% 
+  filter(housing == TRUE, created <= "2019-04-30", scraped >= "2019-04-30") %>% 
+  nrow() %>% 
+  {. / Canada_population[3,]$`Population` * 1000}
+
+# Montreal
+
+property_Montreal <- property_MTL
+
+daily_Montreal <- 
+  strr_expand_daily(daily_compressed_MTL, cores = 4)
+
+daily_Montreal <- 
+  property_Montreal %>% 
+  select(property_ID, host_ID, listing_type, created, scraped, housing) %>% 
+  left_join(daily_Montreal, .) %>% 
+  filter(date >= created, date - 30 <= scraped, status != "U") %>% 
+  mutate(city = "Montreal")
+
+daily_Montreal <- 
+  strr_expand_daily(daily_compressed_Montreal, cores = 4)
+
+daily_Montreal <- 
+  property_Montreal %>% 
+  select(property_ID, host_ID, listing_type, created, scraped, housing) %>% 
+  left_join(daily_Montreal, .) %>% 
+  filter(date >= created, date - 30 <= scraped, status != "U") %>% 
+  mutate(city = "Montreal")
+
+Montreal_info <- list()
+Montreal_info[[1]] <- 
+  property_Montreal %>% 
+  filter(housing == TRUE, created <= "2019-04-30", scraped >= "2019-04-30") %>% 
+  nrow()
+Montreal_info[[2]] <- 
+  Montreal_info[[1]] / Canada_population[1,]$`Population` * 1000
+Montreal_info[[3]] <- 
+  daily_Montreal %>% 
+  filter(housing == TRUE, status == "R", date >= "2018-05-01") %>% 
+  pull(price) %>% 
+  sum()
+Montreal_info[[4]] <- 
+  Montreal_info[[3]] / Montreal_info[[1]]
+
+# Vancouver
+
+property_Vancouver <- property_VAN
+
+daily_Vancouver <- 
+  strr_expand_daily(daily_compressed_VAN, cores = 4)
+
+daily_Vancouver <- 
+  property_Vancouver %>% 
+  select(property_ID, host_ID, listing_type, created, scraped, housing) %>% 
+  left_join(daily_Vancouver, .) %>% 
+  filter(date >= created, date - 30 <= scraped, status != "U") %>% 
+  mutate(city = "Vancouver")
+
+daily_Vancouver <- 
+  strr_expand_daily(daily_compressed_Vancouver, cores = 4)
+
+daily_Vancouver <- 
+  property_Vancouver %>% 
+  select(property_ID, host_ID, listing_type, created, scraped, housing) %>% 
+  left_join(daily_Vancouver, .) %>% 
+  filter(date >= created, date - 30 <= scraped, status != "U") %>% 
+  mutate(city = "Vancouver")
+
+Vancouver_info <- list()
+Vancouver_info[[1]] <- 
+  property_Vancouver %>% 
+  filter(housing == TRUE, created <= "2019-04-30", scraped >= "2019-04-30") %>% 
+  nrow()
+Vancouver_info[[2]] <- 
+  Vancouver_info[[1]] / Canada_population[5,]$`Population` * 1000
+Vancouver_info[[3]] <- 
+  daily_Vancouver %>% 
+  filter(housing == TRUE, status == "R", date >= "2018-05-01") %>% 
+  pull(price) %>% 
+  sum()
+Vancouver_info[[4]] <- 
+  Vancouver_info[[3]] / Vancouver_info[[1]]
+
+# Ottawa
+
+daily_Ottawa <- 
+  strr_expand_daily(daily_compressed_Ottawa, cores = 4)
+
+daily_Ottawa <- 
+  property_Ottawa %>% 
+  select(property_ID, host_ID, listing_type, created, scraped, housing) %>% 
+  left_join(daily_Ottawa, .) %>% 
+  filter(date >= created, date - 30 <= scraped, status != "U") %>% 
+  mutate(city = "Ottawa")
+
+daily_Ottawa <- 
+  strr_expand_daily(daily_compressed_Ottawa, cores = 4)
+
+daily_Ottawa <- 
+  property_Ottawa %>% 
+  select(property_ID, host_ID, listing_type, created, scraped, housing) %>% 
+  left_join(daily_Ottawa, .) %>% 
+  filter(date >= created, date - 30 <= scraped, status != "U") %>% 
+  mutate(city = "Ottawa")
+
+Ottawa_info <- list()
+Ottawa_info[[1]] <- 
+  property_Ottawa %>% 
+  filter(housing == TRUE, created <= "2019-04-30", scraped >= "2019-04-30") %>% 
+  nrow()
+Ottawa_info[[2]] <- 
+  Ottawa_info[[1]] / Canada_population[2,]$`Population` * 1000
+Ottawa_info[[3]] <- 
+  daily_Ottawa %>% 
+  filter(housing == TRUE, status == "R", date >= "2018-05-01") %>% 
+  pull(price) %>% 
+  sum()
+Ottawa_info[[4]] <- 
+  Ottawa_info[[3]] / Ottawa_info[[1]]
+
+# Calgary
+
+daily_Calgary <- 
+  strr_expand_daily(daily_compressed_Calgary, cores = 4)
+
+daily_Calgary <- 
+  property_Calgary %>% 
+  select(property_ID, host_ID, listing_type, created, scraped, housing) %>% 
+  left_join(daily_Calgary, .) %>% 
+  filter(date >= created, date - 30 <= scraped, status != "U") %>% 
+  mutate(city = "Calgary")
+
+daily_Calgary <- 
+  strr_expand_daily(daily_compressed_Calgary, cores = 4)
+
+daily_Calgary <- 
+  property_Calgary %>% 
+  select(property_ID, host_ID, listing_type, created, scraped, housing) %>% 
+  left_join(daily_Calgary, .) %>% 
+  filter(date >= created, date - 30 <= scraped, status != "U") %>% 
+  mutate(city = "Calgary")
+
+Calgary_info <- list()
+Calgary_info[[1]] <- 
+  property_Calgary %>% 
+  filter(housing == TRUE, created <= "2019-04-30", scraped >= "2019-04-30") %>% 
+  nrow()
+Calgary_info[[2]] <- 
+  Calgary_info[[1]] / Canada_population[4,]$`Population` * 1000
+Calgary_info[[3]] <- 
+  daily_Calgary %>% 
+  filter(housing == TRUE, status == "R", date >= "2018-05-01") %>% 
+  pull(price) %>% 
+  sum()
+Calgary_info[[4]] <- 
+  Calgary_info[[3]] / Calgary_info[[1]]
+
+Canada_daily <- 
+  daily %>% 
+  select(-ML) %>% 
+  mutate(city = "Toronto") %>% 
+  bind_rows(daily_Montreal, daily_Vancouver, daily_Ottawa, daily_Calgary) %>% 
+  filter(housing == TRUE)
+
+Canada_graph <- 
+  Canada_daily %>% 
+  count(date, city) %>% 
+  ggplot() +
+  geom_line(aes(date, n, colour = city), size = 1.5) +
+  theme_minimal() +
+  scale_y_continuous(name = NULL, label = scales::comma) +
+  scale_x_date(name = NULL, limits = c(as.Date("2016-01-01"), NA)) +
+  scale_colour_manual(name = "City", 
+                      values = c("#4295A8", "#B4656F", "#C7F2A7", "#96897B",
+                                 "#DFD5A5")) +
+  theme(text = element_text(family = "Futura"),
+        legend.title = element_text(family = "Futura", face = "bold", 
+                                    size = 10),
+        legend.text = element_text(family = "Futura", size = 10),
+        legend.position = "bottom")
+
+ggsave("output/figure_2.pdf", plot = Canada_graph, width = 8, 
+       height = 5, units = "in", useDingbats = FALSE)
