@@ -39,7 +39,7 @@ nrow(LTM_property)
 
 # Listing type breakdown
 nrow(filter(LTM_property, listing_type == "Shared room"))/
-nrow(LTM_property)
+  nrow(LTM_property)
 
 # Number of hosts on April 30, 2019
 length(unique(LTM_property$host_ID))
@@ -51,7 +51,7 @@ LTM_property %>%
   st_drop_geometry() %>% 
   unique() %>% 
   nrow()/
-length(unique(LTM_property$host_ID))
+  length(unique(LTM_property$host_ID))
 
 # LTM revenue
 sum(LTM_property$revenue, na.rm = TRUE)
@@ -61,7 +61,7 @@ filter(LTM_property, listing_type == "Shared room") %>%
   select(revenue) %>% 
   st_drop_geometry() %>% 
   sum(na.rm = TRUE) /
-sum(LTM_property$revenue, na.rm = TRUE)
+  sum(LTM_property$revenue, na.rm = TRUE)
 
 # YOY growth rate
 nrow(LTM_property) / 
@@ -78,7 +78,7 @@ active_listings_graph <-
   theme_minimal() +
   scale_x_date(name = NULL)
 #+
- #theme(text = element_text(family = "Futura"))
+#theme(text = element_text(family = "Futura"))
 
 ggsave("output/figure_1.pdf", plot = active_listings_graph, width = 8, 
        height = 5, units = "in", useDingbats = FALSE)
@@ -155,23 +155,23 @@ map <-
         axis.text.x = element_blank(),
         axis.text.y = element_blank(),
         rect = element_blank())
-        #text = element_text(family = "Futura", face = "plain"),
-        # legend.title = element_text(family = "Futura", face = "bold", 
-        #                           size = 10),
-        #legend.text = element_text(family = "Futura", size = 10),
-        #strip.text = element_text(family = "Futura", face = "bold", size = 12)) 
+#text = element_text(family = "Futura", face = "plain"),
+# legend.title = element_text(family = "Futura", face = "bold", 
+#                           size = 10),
+#legend.text = element_text(family = "Futura", size = 10),
+#strip.text = element_text(family = "Futura", face = "bold", size = 12)) 
 
 ggsave("output/figure_3.pdf", plot = map, width = 8, height = 9, units = "in",
        useDingbats = FALSE)
 
 
-### Which STR platforms are used in Toronto? ###################################
+### Which STR platforms are used in Halifax? ###################################
 
 nrow(filter(LTM_property, !is.na(ab_property), is.na(ha_property)))
 nrow(filter(LTM_property, !is.na(ha_property), is.na(ab_property)))
 nrow(filter(LTM_property, !is.na(ha_property), !is.na(ab_property)))
 
-nrow(filter(property, created <= "2019-04-30", scraped >= "2019-04-30"))
+nrow(LTM_property)
 
 
 
@@ -251,11 +251,25 @@ ggsave("output/figure_4.pdf", plot = bedroom_graph, width = 8,
 
 ## Host revenue percentiles
 
+daily %>%
+  filter(housing == TRUE, date >= "2018-05-01", status == "R") %>%
+  group_by(host_ID) %>%
+  summarize(rev = sum(price)*exchange_rate) %>%
+  filter(rev > 0) %>%
+  summarize(
+    `Top 1%`  = sum(rev[rev > quantile(rev, c(0.99))] / sum(rev)),
+    `Top 5%`  = sum(rev[rev > quantile(rev, c(0.95))] / sum(rev)),
+    `Top 10%` = sum(rev[rev > quantile(rev, c(0.90))] / sum(rev)),
+    `Top 20%` = sum(rev[rev > quantile(rev, c(0.80))] / sum(rev)))
+
+
+## Host revenue percentiles graph
+
 revenue_graph <-
   daily %>%
   filter(housing == TRUE, date >= "2018-05-01", status == "R") %>%
   group_by(host_ID) %>%
-  summarize(rev = sum(price)) %>%
+  summarize(rev = sum(price)*exchange_rate) %>%
   filter(rev > 0) %>%
   summarize(
     `Top 1%`  = sum(rev[rev > quantile(rev, c(0.99))] / sum(rev)),
@@ -273,10 +287,10 @@ revenue_graph <-
   scale_y_continuous(labels = scales::percent) +
   theme(axis.title.y = element_blank(),
         axis.title.x = element_blank(),
-        text = element_text(family = "Futura", face = "plain"),
-        legend.title = element_text(family = "Futura", face = "bold", 
-                                    size = 10),
-        legend.text = element_text(family = "Futura", size = 10),
+        #text = element_text(family = "Futura", face = "plain"),
+        # legend.title = element_text(family = "Futura", face = "bold", 
+        #                            size = 10),
+        #legend.text = element_text(family = "Futura", size = 10),
         legend.position = "none")
 
 ggsave("output/figure_5.pdf", plot = revenue_graph, width = 8, height = 4, 
@@ -302,8 +316,8 @@ ML_summary <-
   daily %>% 
   group_by(date) %>% 
   summarize(Listings = mean(ML),
-            Revenue = sum(price * (status == "R") * ML, na.rm = TRUE) / 
-              sum(price * (status == "R"), na.rm = TRUE))
+            Revenue = sum(price * (status == "R") * ML * exchange_rate, na.rm = TRUE) / 
+              sum(price * (status == "R") * exchange_rate, na.rm = TRUE))
 
 ML_graph <- 
   ML_summary %>% 
@@ -316,11 +330,11 @@ ML_graph <-
   scale_y_continuous(name = NULL, label = scales::percent) +
   scale_x_date(name = NULL) +
   scale_colour_manual(values = c("#4295A8", "#B4656F")) +
-  theme(legend.position = "bottom",
-        text = element_text(family = "Futura", face = "plain"),
-        legend.title = element_text(family = "Futura", face = "bold", 
-                                    size = 10),
-        legend.text = element_text(family = "Futura", size = 10))
+  theme(legend.position = "bottom")
+#text = element_text(family = "Futura", face = "plain"),
+#legend.title = element_text(family = "Futura", face = "bold", 
+#                            size = 10),
+#legend.text = element_text(family = "Futura", size = 10))
 
 ggsave("output/figure_6.pdf", plot = ML_graph, width = 8, height = 7, 
        units = "in", useDingbats = FALSE)
@@ -331,8 +345,8 @@ ML_table <-
   daily %>% 
   group_by(date) %>% 
   summarize(Listings = mean(ML),
-            Revenue = sum(price * (status == "R") * ML, na.rm = TRUE) / 
-              sum(price * (status == "R"), na.rm = TRUE)) %>% 
+            Revenue = sum(price * (status == "R") * ML * exchange_rate, na.rm = TRUE) / 
+              sum(price * (status == "R") * exchange_rate, na.rm = TRUE)) %>% 
   gather(Listings, Revenue, key = `Multilisting percentage`, value = Value)
 
 ML_table %>% 
@@ -359,7 +373,7 @@ FREH %>%
   geom_line(aes(date, n), colour = "black", size = 1) +
   theme_minimal() +
   scale_y_continuous(name = NULL, label = comma) +
-  ggtitle("FREH listings in the City of Toronto")
+  ggtitle("FREH listings in Halifax Regional Municipality")
 
 GH %>% 
   st_drop_geometry() %>% 
