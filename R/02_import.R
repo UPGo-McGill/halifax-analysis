@@ -16,7 +16,7 @@ streets <-
   osmdata_sf()
 
 HRM_streets <- 
-  rbind(streets$osm_polygons %>% st_cast("LINESTRING"),streets$osm_lines) %>% 
+  rbind(streets$osm_polygons %>% st_cast("LINESTRING"), streets$osm_lines) %>% 
   as_tibble() %>% 
   st_as_sf() %>% 
   st_transform(32617) %>%
@@ -28,8 +28,8 @@ HRM_streets <-
 
 con <- RPostgres::dbConnect(
   RPostgres::Postgres(),
-  user = "charlottebelot",
-  password = "iR7AXqmyKmChXCtFMMjyzjbH",
+  user = "amybolt",
+  password = "",
   host = "025wpgs.campus.mcgill.ca",
   dbname = "airdna")
 
@@ -38,7 +38,7 @@ daily_all <- tbl(con, "daily_old")
 
 property <- 
   property_all %>% 
-  filter(city == "Halifax") %>% 
+  filter(city == "Halifax Regional Municipality") %>% 
   collect()
 
 daily <- 
