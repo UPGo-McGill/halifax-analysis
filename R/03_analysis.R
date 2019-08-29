@@ -561,18 +561,26 @@ for (n in c(1:nrow(neighbourhoods))) {
   rm(neighbourhood_property, neighbourhood_daily, temp, temp2)
 }
 
-# add neighbourhood geometries
+# add census variables and geometries
+CTs_halifax <- st_intersect_summarize(
+  CTs_canada,
+  neighbourhoods,
+  group_vars = vars(neighbourhood),
+  population = population,
+  sum_vars = vars(households, university_education, housing_need, non_mover, owner_occupier,
+                  rental, official_language, citizen, white),
+  mean_vars = vars(med_income)) %>% 
+  ungroup() %>% 
+  drop_units()
 
 airbnb_neighbourhoods <- airbnb_neighbourhoods %>% 
-  left_join(neighbourhoods) %>% 
-  select(-count)
-
-# add census variables
-
+  left_join(CTs_halifax) %>% 
+  mutate(households = households * population)
 
 # add housing loss as percentage of dwellings
 
-
+airbnb_neighbourhoods <- airbnb_neighbourhoods %>% 
+  mutate(housing_loss_pct = housing_loss/households)
 
 ################ NOT INCLUDED AS OF RIGHT NOW ###############################
 #### Canadian active listings and graph

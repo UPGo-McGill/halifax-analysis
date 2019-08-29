@@ -40,7 +40,7 @@ CTs_canada <-
                 "v_CA16_4837", "v_CA16_4838", "v_CA16_512", 
                 "v_CA16_3393", "v_CA16_3996"),
     geo_format = "sf") %>% 
-  st_transform(32618) %>% 
+  st_transform(32617) %>% 
   filter(Type == "CT") %>% 
   select(GeoUID, PR_UID, CMA_UID, Population, Households, contains("v_CA"))
 
