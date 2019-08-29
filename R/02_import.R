@@ -26,7 +26,11 @@ HRM_streets <-
 neighbourhoods <-
   read_sf(dsn = "data", layer = "halifax")%>%
   st_transform(32617) %>% 
-  select(neighbourhood = OLD_DIST, geometry)
+  select(id = OBJECTID, neighbourhood = OLD_DIST, geometry)
+
+neighbourhoods <- neighbourhoods %>% 
+  group_by(neighbourhood) %>% 
+  summarize(count = n())
 
 ### Import data from server ####################################################
 
