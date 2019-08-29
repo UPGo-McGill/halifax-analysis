@@ -26,9 +26,7 @@ HRM_streets <-
 neighbourhoods <-
   read_sf(dsn = "data", layer = "halifax")%>%
   st_transform(32617) %>% 
-  select(id = OBJECTID, neighbourhood = OLD_DIST, geometry)
-
-neighbourhoods <- neighbourhoods %>% 
+  select(id = OBJECTID, neighbourhood = OLD_DIST, geometry) %>% 
   group_by(neighbourhood) %>% 
   summarize(count = n())
 
@@ -93,10 +91,12 @@ ML_daily <-
 rm(con, daily_all, property_all)
 
 
-
 ### Process files ##############################################################
 
 ## Set up property and daily files
+
+start_date <- "2018-05-01"
+end_date <- "2019-04-30"
 
 property <- 
   property %>% 
@@ -119,25 +119,24 @@ daily <-
   filter(date >= created, date - 30 <= scraped, status != "U")
 
 
-## Add LTM revenue
+## Add last twelve months revenue
 
 exchange_rate <- mean(1.2873,	1.3129, 1.3130, 1.3041, 1.3037, 1.3010, 1.3200,
                       1.3432, 1.3301, 1.3206, 1.3368, 1.3378)
 
 property <- 
   daily %>% 
-  filter(date >= "2018-05-01", status == "R") %>% 
+  filter(date >= start_date, status == "R") %>% 
   group_by(property_ID) %>% 
   summarize(revenue = sum(price) * exchange_rate) %>% 
   select(property_ID, revenue) %>% 
   left_join(property, .)
 
 
-## Create LTM_property
+## Create last twelve months property file
 
 LTM_property <- property %>% 
-  filter(created <= "2019-04-30", scraped >= "2019-04-30", housing == TRUE)
-
+  filter(created <= end_date, scraped >= start_date, housing == TRUE)
 
 
 ### Process multilistings ######################################################
@@ -155,7 +154,6 @@ ML_daily <-
 ML_daily <- 
   ML_daily %>% 
   filter(date >= created, date <= scraped + 30, status != "U")
-
 
 ## Do ML calculations
 
@@ -191,7 +189,6 @@ daily <-
   select(-PR_ML)
 
 
-
 ### Calculate FREH and GH listings #############################################
 
 FREH <- 
@@ -205,8 +202,6 @@ GH <-
   filter(housing == TRUE) %>% 
   strr_ghost(property_ID, host_ID, created, scraped, "2014-10-01", "2019-04-30",
              listing_type, cores = 4)
-
-
 
 ### Save files #################################################################
 

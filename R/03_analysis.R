@@ -13,12 +13,15 @@ load("data/HRM_daily_compressed.Rdata")
 load("data/neighbourhoods.Rdata")
 load("data/CTs_canada.Rdata")
 
+# Set up dates
+start_date <- "2018-05-01"
+end_date <- "2019-04-30"
 
+date_yoy <- "2018-04-30"
 
 ### Active daily listings ######################################################
 
 ## Create objects
-
 active_listings <- 
   daily %>% 
   filter(housing == TRUE) %>% 
@@ -33,18 +36,17 @@ active_listings_filtered %>%
   arrange(desc(date))
 
 ## Active listings from property file
-
 # All listings
-nrow(filter(property, created <= "2019-04-30", scraped >= "2019-04-30"))
+nrow(filter(property, created <= end_date, scraped >= end_date))
 
-# Housing listings
+# Housing listings over the last twelve months
 nrow(LTM_property)
 
 # Listing type breakdown
 nrow(filter(LTM_property, listing_type == "Shared room"))/
   nrow(LTM_property)
 
-# Number of hosts on April 30, 2019
+# Number of hosts over last twelve months
 length(unique(LTM_property$host_ID))
 
 # Hosts by listing type
@@ -68,7 +70,7 @@ filter(LTM_property, listing_type == "Shared room") %>%
 
 # YOY growth rate
 nrow(LTM_property) / 
-  nrow(filter(property, created <= "2018-04-30", scraped >= "2018-04-30",
+  nrow(filter(property, created <= date_yoy, scraped >= date_yoy,
               housing == TRUE))
 
 # Active listings graph
@@ -126,7 +128,7 @@ property_2018 <-
 
 property_2019 <- 
   daily %>% 
-  filter(status == "R", date >= "2018-05-01", date <= "2019-04-30") %>% 
+  filter(status == "R", date >= start_date, date <= end_date) %>% 
   group_by(property_ID) %>% 
   summarize(revenue = sum(price) * exchange_rate) %>% 
   left_join(filter(property_in_HRM, housing == TRUE), .) %>% 
@@ -170,12 +172,16 @@ ggsave("output/figure_3.pdf", plot = map, width = 8, height = 9, units = "in",
 
 ### Which STR platforms are used in Halifax? ###################################
 
+# Airbnb and not Homeaway
 nrow(filter(LTM_property, !is.na(ab_property), is.na(ha_property)))
+
+# Homeaway and not Airbnb
 nrow(filter(LTM_property, !is.na(ha_property), is.na(ab_property)))
+
+# Both Airbnb and Homeaway
 nrow(filter(LTM_property, !is.na(ha_property), !is.na(ab_property)))
 
 nrow(LTM_property)
-
 
 
 ### Listing type prevalence ####################################################
@@ -184,7 +190,7 @@ property %>%
   filter(housing == TRUE) %>% 
   rename(`Listing type` = listing_type) %>% 
   st_drop_geometry() %>% 
-  filter(created <= "2019-04-30", scraped >= "2019-04-30") %>% 
+  filter(created <= end_date, scraped >= end_date) %>% 
   group_by(`Listing type`) %>% 
   summarize(`Number of listings` = n(),
             `Annual revenue` = sum(revenue, na.rm = TRUE),
@@ -208,18 +214,18 @@ property %>%
 ### Bedroom breakdown ##########################################################
 
 property %>% 
-  filter(created <= "2019-04-30", scraped >= "2019-04-30", housing == TRUE,
+  filter(created <= end_date, scraped >= end_date, housing == TRUE,
          listing_type == "Entire home/apt") %>% 
   count(bedrooms) %>% 
   mutate(percentage = n / sum(n))
 
-
-
-var <- filter(property, created <= "2019-04-30", scraped >= "2019-04-30", 
+var <- filter(property, created <= end_date, scraped >= end_date, 
               housing == TRUE, listing_type == "Entire home/apt")$bedrooms
 nrows <- 20
 df <- expand.grid(y = 1:20, x = 1:20)
 categ_table <- round(table(var) * ((20*20)/(length(var))))
+# note: sum from categ_table such that there are only 5 categories
+# manually enter the following numbers.
 categ_table <- c(23, 135, 130, 78, 25, 9)
 names(categ_table) <- c("0 (studio)", "1",  "2", "3", "4", "5+")
 df$category <- factor(rep(names(categ_table), categ_table))  
@@ -253,7 +259,7 @@ ggsave("output/figure_4.pdf", plot = bedroom_graph, width = 8,
 ## Host revenue percentiles
 
 daily %>%
-  filter(housing == TRUE, date >= "2018-05-01", status == "R") %>%
+  filter(housing == TRUE, date >= start_date, status == "R") %>%
   group_by(host_ID) %>%
   summarize(rev = sum(price)*exchange_rate) %>%
   filter(rev > 0) %>%
@@ -268,7 +274,7 @@ daily %>%
 
 revenue_graph <-
   daily %>%
-  filter(housing == TRUE, date >= "2018-05-01", status == "R") %>%
+  filter(housing == TRUE, date >= start_date, status == "R") %>%
   group_by(host_ID) %>%
   summarize(rev = sum(price)*exchange_rate) %>%
   filter(rev > 0) %>%
@@ -340,8 +346,6 @@ ML_graph <-
 ggsave("output/figure_6.pdf", plot = ML_graph, width = 8, height = 7, 
        units = "in", useDingbats = FALSE)
 
-
-
 ML_table <- 
   daily %>% 
   group_by(date) %>% 
@@ -359,13 +363,13 @@ ML_table %>%
   scale_y_continuous(name = NULL, label = percent)
 
 ML_table %>% 
-  filter(date == "2019-04-30")
+  filter(date == end_date)
 
 
 ### Housing loss ###############################################################
 
 FREH %>% 
-  filter(date == "2019-04-30") %>% 
+  filter(date == end_date) %>% 
   count()
 
 FREH %>% 
@@ -384,7 +388,7 @@ GH %>%
   geom_line(aes(date, GH_units), colour = "black", size = 1) +
   theme_minimal() +
   scale_y_continuous(name = NULL, label = comma) +
-  ggtitle("Units converted to ghost hostels in the City of Toronto")
+  ggtitle("Units converted to ghost hostels in Halifax Regional Municipality")
 
 GH_total <- 
   GH %>% 
@@ -420,14 +424,16 @@ ggsave("output/figure_7.pdf", plot = housing_graph, width = 8, height = 7,
        units = "in", useDingbats = FALSE)
 
 # Current housing loss figure
-sum(filter(housing_loss, date == "2019-04-30")$`Housing units`)
+sum(filter(housing_loss, date == end_date)$`Housing units`)
 
 # YOY increase
-sum(filter(housing_loss, date == "2019-04-30")$`Housing units`) /
-  sum(filter(housing_loss, date == "2018-04-30")$`Housing units`)
+sum(filter(housing_loss, date == end_date)$`Housing units`) /
+  sum(filter(housing_loss, date == date_yoy)$`Housing units`)
 
 
 ## Relate housing loss to rental vacancy rate
+
+vacancy_rate <- 1.016
 
 housing <- 
   get_census("CA16", regions = list(CSD = "1209034"), level = "CSD", 
@@ -438,7 +444,7 @@ housing %>%
          `v_CA16_4897: Total - Tenant households in non-farm, non-reserve private dwellings - 25% sample data`) %>% 
   set_names(c("Dwellings", "Tenants")) %>% 
   pull(Tenants) %>% 
-  {. * 1.016 * 0.016}
+  {. * vacancy_rate * (vacancy_rate - 1)}
 
 ### Number of long reservations
 
@@ -477,38 +483,38 @@ for (n in c(1:nrow(neighbourhoods))) {
   airbnb_neighbourhoods[n,1] <- neighbourhoods$neighbourhood[n]
   
   airbnb_neighbourhoods[n,2] <- neighbourhood_property %>% 
-    filter(created <= "2019-04-30",
-           scraped >= "2019-04-30") %>% 
+    filter(created <= end_date,
+           scraped >= end_date) %>% 
     nrow()
   
   airbnb_neighbourhoods[n,3] <- neighbourhood_daily %>% 
-    filter(date <= "2019-04-30" & date >= "2018-05-01") %>% 
+    filter(date <= end_date & date >= start_date) %>% 
     group_by(date) %>% 
     summarize(listings = n()) %>%
     summarise(mean_listings = mean(listings))
   
   airbnb_neighbourhoods[n,4] <-   nrow(neighbourhood_daily %>% 
-                           filter(date == "2019-04-30") %>% 
+                           filter(date == end_date) %>% 
                            filter(listing_type == "Entire home/apt"))/
     nrow(neighbourhood_daily %>% 
-           filter(date == "2019-04-30"))
+           filter(date == end_date))
   
   airbnb_neighbourhoods[n,5] <-   neighbourhood_daily %>% 
-    filter(date <= "2019-04-30" & date >= "2018-05-01" &
+    filter(date <= end_date & date >= start_date &
              status == "R" ) %>%
     summarise(sum_revenue = sum(price, na.rm = TRUE)*exchange_rate)
   
   airbnb_neighbourhoods[n,6] <-      nrow(neighbourhood_daily %>% 
-                                            filter(date == "2019-04-30") %>% 
+                                            filter(date == end_date) %>% 
                                             inner_join(GH, .))
   
   airbnb_neighbourhoods[n,7] <-     nrow(neighbourhood_daily %>% 
-                                           filter(date == "2019-04-30") %>% 
+                                           filter(date == end_date) %>% 
                                            inner_join(FREH, .))
   
-  temp <- strr_ghost(neighbourhood_property, property_ID, host_ID, created, scraped, "2018-05-01",
-                     "2019-04-30", listing_type) %>% 
-    filter(date == "2019-04-30") %>% 
+  temp <- strr_ghost(neighbourhood_property, property_ID, host_ID, created, scraped, start_date,
+                     end_date, listing_type) %>% 
+    filter(date == end_date) %>% 
     group_by(ghost_ID) %>% 
     summarize(n = sum(housing_units)) %>% 
     ungroup()
@@ -517,11 +523,11 @@ for (n in c(1:nrow(neighbourhoods))) {
                            summarize(GH_housing_loss = sum(n))) %>% 
     as.numeric() +
     nrow(neighbourhood_daily %>% 
-           filter(date == "2019-04-30") %>% 
+           filter(date == end_date) %>% 
            inner_join(FREH, .))
   
   airbnb_neighbourhoods[n,9] <- neighbourhood_daily %>%
-    filter(date >= "2018-05-01", date <= "2019-04-30", status == "R") %>%
+    filter(date >= start_date, date <= end_date, status == "R") %>%
     group_by(host_ID) %>%
     summarize(rev = sum(price) * exchange_rate) %>%
     filter(rev > 0) %>%
@@ -530,17 +536,17 @@ for (n in c(1:nrow(neighbourhoods))) {
   
   
   airbnb_neighbourhoods[n,10] <- neighbourhood_property %>% 
-    filter(created <= "2019-04-30",
-           scraped >= "2019-04-30") %>% 
+    filter(created <= end_date,
+           scraped >= end_date) %>% 
     nrow() / 
     neighbourhood_property %>% 
-    filter(created <= "2018-04-30",
-           scraped >= "2018-04-30") %>% 
+    filter(created <= date_yoy,
+           scraped >= date_yoy) %>% 
     nrow()
   
   temp2 <- strr_ghost(neighbourhood_property, property_ID, host_ID, created, scraped, "2017-05-01",
-                     "2018-04-30", listing_type) %>% 
-    filter(date == "2018-04-30") %>% 
+                     end_date = date_yoy, listing_type) %>% 
+    filter(date == date_yoy) %>% 
     group_by(ghost_ID) %>% 
     summarize(n = sum(housing_units)) %>% 
     ungroup()
@@ -549,19 +555,19 @@ for (n in c(1:nrow(neighbourhoods))) {
                                          summarize(GH_housing_loss = sum(n))) %>% 
     as.numeric() +
     nrow(neighbourhood_daily %>% 
-           filter(date == "2019-04-30") %>% 
+           filter(date == end_date) %>% 
            inner_join(FREH, .)))/
     (ifelse(nrow(temp2) == 0, 0, temp2 %>% 
               summarize(GH_housing_loss = sum(n))) %>% 
        as.numeric() +
        nrow(neighbourhood_daily %>% 
-              filter(date == "2018-04-30") %>% 
+              filter(date == date_yoy) %>% 
               inner_join(FREH, .)))
   
   rm(neighbourhood_property, neighbourhood_daily, temp, temp2)
 }
 
-# add census variables and geometries
+# Add census variables and geometries
 CTs_halifax <- st_intersect_summarize(
   CTs_canada,
   neighbourhoods,
@@ -577,7 +583,7 @@ airbnb_neighbourhoods <- airbnb_neighbourhoods %>%
   left_join(CTs_halifax) %>% 
   mutate(households = households * population)
 
-# add housing loss as percentage of dwellings
+# Add housing loss as percentage of dwellings
 
 airbnb_neighbourhoods <- airbnb_neighbourhoods %>% 
   mutate(housing_loss_pct = housing_loss/households)
