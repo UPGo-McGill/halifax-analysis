@@ -32,6 +32,32 @@ neighbourhoods <- neighbourhoods %>%
   group_by(neighbourhood) %>% 
   summarize(count = n())
 
+### Census import #############################################################
+CTs_canada <-
+  get_census(
+    dataset = "CA16", regions = list(PR = "12"), level = "CT",
+    vectors = c("v_CA16_2398", "v_CA16_5078", "v_CA16_4888", "v_CA16_6695",
+                "v_CA16_4837", "v_CA16_4838", "v_CA16_512", 
+                "v_CA16_3393", "v_CA16_3996"),
+    geo_format = "sf") %>% 
+  st_transform(32618) %>% 
+  filter(Type == "CT") %>% 
+  select(GeoUID, PR_UID, CMA_UID, Population, Households, contains("v_CA"))
+
+names(CTs_canada) <- 
+  c("Geo_UID", "PR_UID", "CMA_UID", "population", "households", "med_income",
+    "university_education", "housing_need", "non_mover", "owner_occupier", 
+    "rental", "official_language", "citizen", "white", "geometry")
+
+CTs_canada <- CTs_canada%>% 
+  mutate_at(
+    .vars = c("university_education", "non_mover", 
+              "official_language", "citizen", "white"),
+    .funs = list(`pct_pop` = ~{. / population})) %>% 
+  mutate_at(
+    .vars = c("housing_need", "owner_occupier", "rental"),
+    .funs = list(`pct_household` = ~{. / households}))
+
 ### Import data from server ####################################################
 
 con <- RPostgres::dbConnect(
@@ -192,3 +218,5 @@ save(GH, file = "data/HRM_GH.Rdata")
 save(FREH, file = "data/HRM_FREH.Rdata")
 save(daily, file = "data/HRM_daily.Rdata")
 save(daily_compressed, file = "data/HRM_daily_compressed.Rdata")
+save(CTs_canada, file = "data/CTs_canada.Rdata")
+save(neighbourhoods, file = "data/neighbourhoods.Rdata")
