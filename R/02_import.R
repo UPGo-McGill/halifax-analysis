@@ -28,10 +28,6 @@ neighbourhoods <-
   st_transform(32617) %>% 
   select(neighbourhood = OLD_DIST, geometry)
 
-gapply(neighbourhoods, neighbourhood, st_union())
-
-
-
 ### Import data from server ####################################################
 
 con <- RPostgres::dbConnect(
