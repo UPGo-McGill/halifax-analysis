@@ -269,8 +269,8 @@ airbnb_neighbourhoods %>%
   ggplot() +
   geom_sf(aes(fill = housing_loss_pct, geometry = geometry)) +
   scale_fill_gradientn(colors = c("steelblue4", "darkseagreen4", "darkseagreen1"),
-                       values = rescale(c(0, 0.005, 0.015)),
-                       limits = c(0, 0.015)) + 
+                       values = rescale(c(0, 0.005, 0.010)),
+                       limits = c(0, 0.02)) + 
   # geom_sf(data = HRM_streets, colour = alpha("grey", 0.5)) +
   guides(fill = guide_colorbar(title = "Percentage of housing lost to short-term rentals"))+
   theme(axis.line = element_blank(),
