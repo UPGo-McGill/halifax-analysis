@@ -66,7 +66,7 @@ property_2018 <-
   daily %>% 
   filter(status == "R", date >= "2017-05-01", date <= "2018-04-30") %>% 
   group_by(property_ID) %>% 
-  ssummarize(revenue = sum(price) * exchange_rate) %>% 
+  summarize(revenue = sum(price) * exchange_rate) %>% 
   left_join(filter(property_in_HRM, housing == TRUE), .) %>% 
   mutate(Year = "2018") %>% 
   filter(revenue > 0)
@@ -263,6 +263,52 @@ housing_graph <-
 
 ggsave("output/figure_7.pdf", plot = housing_graph, width = 8, height = 7, 
        units = "in", useDingbats = FALSE)
+
+### FIGURE 8 - housing loss as percentage of dwellings
+airbnb_neighbourhoods %>% 
+  ggplot() +
+  geom_sf(aes(fill = housing_loss_pct, geometry = geometry, size = 0.1)) +
+  scale_fill_gradient(high = "mistyrose", low = "navyblue", guide = "colorbar") + 
+  coord_fixed(1.3)
+geom_sf(data = HRM_streets, colour = alpha("grey", 0.5)) 
+
+ 
+
+
+  scale_fill_gradient()+
+  theme(legend.position = "bottom",
+        legend.title = "Percentage of housing lost to short-term rentals")
+  
+  scale_color_gradient(name = "Percentage of housing lost to short-term rentals",
+                       low = "#132B43", high = "#56B1F7",
+                       position = "right")
+
+
+
+?scale_color_gradient
+  scale_colour_manual(name = "Listing type",
+                      values = c("#4295A8", "#B4656F", "#C7F2A7")) +
+  scale_size_continuous(name = "Annual revenue",
+                        breaks = c(20000, 40000, 60000, 80000, 100000),
+                        labels = c("$20,000", "$40,000", "$60,000", "$80,000",
+                                   "$100,000"),
+                        range = c(0.05, 2.5)) +
+  guides(size = guide_legend(nrow = 3, byrow = TRUE),
+         colour = guide_legend(
+           override.aes = list(fill = c("#4295A8", "#B4656F", "#C7F2A7"), 
+                               alpha = 1), nrow = 3, byrow = TRUE)) +
+  theme(legend.position = "bottom",
+        legend.spacing.y = unit(10, "pt"),
+        axis.ticks = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        rect = element_blank())
+#text = element_text(family = "Futura", face = "plain"),
+# legend.title = element_text(family = "Futura", face = "bold", 
+#                           size = 10),
+#legend.text = element_text(family = "Futura", size = 10),
+#strip.text = element_text(family = "Futura", face = "bold", size = 12)) 
+
 
 ########## NOT INCLUDED #####################
 #### Canadian active listings and graph
