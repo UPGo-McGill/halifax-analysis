@@ -200,6 +200,22 @@ GH %>%
   scale_y_continuous(name = NULL, label = comma) +
   ggtitle("Units converted to ghost hostels in Halifax Regional Municipality")
 
+GH_total <- 
+  GH %>% 
+  st_drop_geometry() %>% 
+  group_by(date) %>% 
+  summarize(GH_units = sum(housing_units)) %>% 
+  pull(GH_units) %>% 
+  rollmean(365, align = "right")
+
+housing_loss <- 
+  FREH %>% 
+  group_by(date) %>% 
+  summarize(`Entire home/apt` = n()) %>% 
+  mutate(`Private room` = as.integer(GH_total)) %>% 
+  gather(`Entire home/apt`, `Private room`, key = `Listing type`,
+         value = `Housing units`)
+
 # Current housing loss figure
 sum(filter(housing_loss, date == end_date)$`Housing units`)
 

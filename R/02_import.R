@@ -73,6 +73,10 @@ property <-
   filter(city == "Halifax Regional Municipality") %>% 
   collect()
 
+points_HRM <- property %>%
+  st_as_sf(coords = c("longitude", "latitude"), crs = 4326) %>%
+  st_transform(32617)
+
 daily_compressed <- 
   daily_all %>% 
   filter(property_ID %in% !! property$property_ID) %>% 
@@ -198,10 +202,10 @@ FREH <-
   select(-FREH)
 
 GH <- 
-  property %>% 
+  points_HRM %>% 
   filter(housing == TRUE) %>% 
-  strr_ghost(property_ID, host_ID, created, scraped, "2014-10-01", "2019-04-30",
-             listing_type, cores = 4)
+  strr_ghost(property_ID, host_ID, created, scraped, "2015-10-01",
+             "2019-04-30", listing_type = listing_type)
 
 ### Save files #################################################################
 
