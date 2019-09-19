@@ -19,7 +19,11 @@ library(units)
 library(devtools)
 install_github("dwachsmuth/strr", force = TRUE)
 library(strr)
+library(spatstat)
+library(polyCub)
 
+### Cancensus api #############################################################
+options(cancensus.api_key = "")
 
 ### Helper functions ###########################################################
 

@@ -11,7 +11,7 @@ load("data/HRM_streets.Rdata")
 load("data/HRM.Rdata")
 load("data/HRM_daily_compressed.Rdata")
 load("data/neighbourhoods.Rdata")
-load("data/CTs_canada.Rdata")
+load("data/CTs_halifax.Rdata")
 
 # Set up dates
 start_date <- "2018-05-01"
@@ -361,20 +361,9 @@ for (n in c(1:nrow(neighbourhoods))) {
 }
 
 # Add census variables and geometries
-CTs_halifax <- st_intersect_summarize(
-  CTs_canada,
-  neighbourhoods,
-  group_vars = vars(neighbourhood),
-  population = population,
-  sum_vars = vars(households, university_education, housing_need, non_mover, owner_occupier,
-                  rental, official_language, citizen, white),
-  mean_vars = vars(med_income)) %>% 
-  ungroup() %>% 
-  drop_units()
 
 airbnb_neighbourhoods <- airbnb_neighbourhoods %>% 
-  left_join(CTs_halifax) %>% 
-  mutate(households = households * population)
+  left_join(neighbourhoods)
 
 # Add housing loss as percentage of dwellings
 

@@ -28,10 +28,11 @@ neighbourhoods <-
   st_transform(32617) %>% 
   select(id = OBJECTID, neighbourhood = OLD_DIST, geometry) %>% 
   group_by(neighbourhood) %>% 
+  st_buffer(0) %>% 
   summarize(count = n())
 
 ### Census import #############################################################
-CTs_canada <-
+CTs_halifax <-
   get_census(
     dataset = "CA16", regions = list(PR = "12"), level = "CT",
     vectors = c("v_CA16_2398", "v_CA16_5078", "v_CA16_4888", "v_CA16_6695",
@@ -42,12 +43,12 @@ CTs_canada <-
   filter(Type == "CT") %>% 
   select(GeoUID, PR_UID, CMA_UID, Population, Households, contains("v_CA"))
 
-names(CTs_canada) <- 
+names(CTs_halifax) <- 
   c("Geo_UID", "PR_UID", "CMA_UID", "population", "households", "med_income",
     "university_education", "housing_need", "non_mover", "owner_occupier", 
     "rental", "official_language", "citizen", "white", "geometry")
 
-CTs_canada <- CTs_canada%>% 
+CTs_halifax <- CTs_halifax %>% 
   mutate_at(
     .vars = c("university_education", "non_mover", 
               "official_language", "citizen", "white"),
@@ -55,6 +56,20 @@ CTs_canada <- CTs_canada%>%
   mutate_at(
     .vars = c("housing_need", "owner_occupier", "rental"),
     .funs = list(`pct_household` = ~{. / households}))
+
+### Add census variables to neighbourhoods ##################################
+
+neighbourhoods <- st_intersect_summarize(
+  CTs_halifax,
+  neighbourhoods,
+  group_vars = vars(neighbourhood),
+  population = population,
+  sum_vars = vars(households, university_education, housing_need, non_mover, owner_occupier,
+                  rental, official_language, citizen, white),
+  mean_vars = vars(med_income)) %>% 
+  ungroup() %>% 
+  drop_units() %>% 
+  mutate(households = households * population)
 
 ### Import data from server ####################################################
 
@@ -66,14 +81,17 @@ con <- RPostgres::dbConnect(
   dbname = "airdna")
 
 property_all <- tbl(con, "property")
-daily_all <- tbl(con, "daily_old")
+
+daily_all <- tbl(con, "daily")
 
 property <- 
   property_all %>% 
-  filter(city == "Halifax Regional Municipality") %>% 
+  filter(country == "Canada", city == "Halifax Regional Municipality") %>% 
   collect()
 
-points_HRM <- property %>%
+property <-  property %>% 
+  filter(!is.na(listing_type)) %>% 
+  select(property_ID:longitude, ab_property:ha_host, bedrooms) %>% 
   st_as_sf(coords = c("longitude", "latitude"), crs = 4326) %>%
   st_transform(32617)
 
@@ -82,6 +100,7 @@ daily_compressed <-
   filter(property_ID %in% !! property$property_ID) %>% 
   collect()
 
+# Set up multilisting file at this point as some hosts may have properties in other cities
 ML_property <- 
   property_all %>% 
   filter(host_ID %in% !! property$host_ID) %>% 
@@ -94,20 +113,12 @@ ML_daily <-
 
 rm(con, daily_all, property_all)
 
-
 ### Process files ##############################################################
 
 ## Set up property and daily files
 
-start_date <- "2018-05-01"
-end_date <- "2019-04-30"
-
-property <- 
-  property %>% 
-  filter(!is.na(listing_type)) %>% 
-  select(property_ID:longitude, ab_property:ha_host, bedrooms) %>% 
-  st_as_sf(coords = c("longitude", "latitude"), crs = 4326) %>%
-  st_transform(32617)
+start_date <- "2018-08-01"
+end_date <- "2019-07-31"
 
 daily <- 
   strr_expand_daily(daily_compressed, cores = 4)
@@ -121,6 +132,18 @@ daily <-
 daily <- 
   daily %>% 
   filter(date >= created, date - 30 <= scraped, status != "U")
+
+
+## Run the raffle to assign a neighbourhood and a census tract #######################
+
+property <- 
+  property %>% 
+strr_raffle(neighbourhoods, neighbourhood, households) %>% 
+  mutate(neighbourhood = winner) %>% 
+  select(-winner) %>% 
+strr_raffle(CTs_halifax, Geo_UID, households) %>% 
+  mutate(CT_GeoUID = winner) %>% 
+  select(-winner)
 
 
 ## Add last twelve months revenue
@@ -202,7 +225,7 @@ FREH <-
   select(-FREH)
 
 GH <- 
-  points_HRM %>% 
+  property %>% 
   filter(housing == TRUE) %>% 
   strr_ghost(property_ID, host_ID, created, scraped, "2015-10-01",
              "2019-04-30", listing_type = listing_type)
@@ -217,5 +240,5 @@ save(GH, file = "data/HRM_GH.Rdata")
 save(FREH, file = "data/HRM_FREH.Rdata")
 save(daily, file = "data/HRM_daily.Rdata")
 save(daily_compressed, file = "data/HRM_daily_compressed.Rdata")
-save(CTs_canada, file = "data/CTs_canada.Rdata")
+save(CTs_halifax, file = "data/CTs_halifax.Rdata")
 save(neighbourhoods, file = "data/neighbourhoods.Rdata")
