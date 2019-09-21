@@ -124,12 +124,6 @@ daily <-
   strr_expand_daily(daily_compressed, cores = 4)
 
 daily <- 
-  property %>% 
-  st_drop_geometry() %>% 
-  select(property_ID, host_ID, listing_type, created, scraped, housing) %>% 
-  left_join(daily, .)
-
-daily <- 
   daily %>% 
   filter(date >= created, date - 30 <= scraped, status != "U")
 
@@ -148,8 +142,9 @@ strr_raffle(CTs_halifax, Geo_UID, households) %>%
 
 ## Add last twelve months revenue
 
-exchange_rate <- mean(1.2873,	1.3129, 1.3130, 1.3041, 1.3037, 1.3010, 1.3200,
-                      1.3432, 1.3301, 1.3206, 1.3368, 1.3378)
+exchange_rate <- mean(1.3041, 1.3037, 1.3010, 1.3200,
+                      1.3432, 1.3301, 1.3206, 1.3368, 
+                      1.3378, 1.3438, 1.3369, 1.3189 )
 
 property <- 
   daily %>% 
@@ -172,11 +167,6 @@ LTM_property <- property %>%
 
 ML_daily <- 
   strr_expand_daily(ML_daily, cores = 4)
-
-ML_daily <- 
-  ML_property %>% 
-  select(property_ID, host_ID, listing_type, created, scraped, housing, bedrooms) %>% 
-  inner_join(ML_daily, .)
 
 ML_daily <- 
   ML_daily %>% 
@@ -220,15 +210,14 @@ daily <-
 
 FREH <- 
   daily %>% 
-  strr_FREH("2015-09-30", "2019-04-30", cores = 4) %>% as_tibble() %>% 
+  strr_FREH("2015-09-30", "2019-07-31", cores = 4) %>% as_tibble() %>% 
   filter(FREH == TRUE) %>% 
   select(-FREH)
 
 GH <- 
   property %>% 
   filter(housing == TRUE) %>% 
-  strr_ghost(property_ID, host_ID, created, scraped, "2015-10-01",
-             "2019-04-30", listing_type = listing_type)
+  strr_ghost()
 
 ### Save files #################################################################
 
