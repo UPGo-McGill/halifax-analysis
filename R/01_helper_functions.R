@@ -115,3 +115,17 @@ gg_bbox <- function(geom, x1 = 0, x2 = 1, y1 = 0, y2 = 1) {
   
   coord_sf(xlim = as.vector(matrix_x), ylim = as.vector(matrix_y))
 }
+
+# number of groups
+n_groups <- function(tbl) {
+  g <- groups(tbl)
+  
+  if (is.null(g)) {
+    tbl_nm <- deparse(substitute(tbl))
+    warning(tbl_nm, " is not grouped", immediate. = TRUE)
+    0
+  } else {
+    g <- unlist(lapply(g, as.character))
+    nrow(unique(tbl[, g, drop = FALSE]))
+  }
+}
