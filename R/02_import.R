@@ -117,8 +117,8 @@ rm(con, daily_all, property_all)
 
 ## Set up property and daily files
 
-start_date <- "2018-08-01"
-end_date <- "2019-07-31"
+start_date <- "2018-05-01"
+end_date <- "2019-04-30"
 
 daily <- 
   strr_expand_daily(daily_compressed, cores = 4)
@@ -142,9 +142,8 @@ strr_raffle(CTs_halifax, Geo_UID, households) %>%
 
 ## Add last twelve months revenue
 
-exchange_rate <- mean(1.3041, 1.3037, 1.3010, 1.3200,
-                      1.3432, 1.3301, 1.3206, 1.3368, 
-                      1.3378, 1.3438, 1.3369, 1.3189 )
+exchange_rate <- mean(1.2873,	1.3129, 1.3130, 1.3041, 1.3037, 1.3010, 1.3200,
+                      1.3432, 1.3301, 1.3206, 1.3368, 1.3378)
 
 property <- 
   daily %>% 
@@ -210,14 +209,22 @@ daily <-
 
 FREH <- 
   daily %>% 
-  strr_FREH("2015-09-30", "2019-07-31", cores = 4) %>% as_tibble() %>% 
+  strr_FREH("2015-09-30", end_date, cores = 4) %>% as_tibble() %>%   
   filter(FREH == TRUE) %>% 
   select(-FREH)
 
 GH <- 
   property %>% 
   filter(housing == TRUE) %>% 
-  strr_ghost()
+  strr_ghost(start_date = "2014-10-01", end_date = end_date)
+
+
+### Atlantic Canada #############################################################
+daily_AC <- 
+  daily_all %>% 
+  filter(country == "Canada", region %in% c("Nova Scotia", "New Brunswick", 
+                                            "Prince Edward Island", "Newfoundland and Labrador")) %>% 
+  collect()
 
 ### Save files #################################################################
 
@@ -230,4 +237,5 @@ save(FREH, file = "data/HRM_FREH.Rdata")
 save(daily, file = "data/HRM_daily.Rdata")
 save(daily_compressed, file = "data/HRM_daily_compressed.Rdata")
 save(CTs_halifax, file = "data/CTs_halifax.Rdata")
-save(neighbourhoods, file = "data/neighbourhoods.Rdata")
+save(neighbourhoods, file = "data/HRM_neighbourhoods.Rdata")
+save(daily_AC, file = "data/daily_AC.Rdata")

@@ -22,6 +22,23 @@ date_yoy <- "2018-04-30"
 exchange_rate <- mean(1.2873,	1.3129, 1.3130, 1.3041, 1.3037, 1.3010, 1.3200,
                       1.3432, 1.3301, 1.3206, 1.3368, 1.3378)
 
+### Region comparison ###############################
+         
+cities <- daily_AC %>% 
+  filter(end_date == "2019-04-30") %>% 
+  count(city) 
+
+region <- daily_AC %>% 
+  filter(end_date == "2019-04-30") %>% 
+  count(region)
+
+revenue <- daily_AC %>% 
+  filter(status == "R") %>% 
+  mutate(revenue = (price) * exchange_rate * (end_date - start_date)) %>% 
+  group_by(region) %>% 
+  summarise(region_revenue = sum(revenue))
+
+
 ### Active daily listings ######################################################
 
 ## Create objects
@@ -32,7 +49,7 @@ active_listings <-
 
 active_listings_filtered <- 
   daily %>% 
-  filter(housing == TRUE, date <= scraped) %>% 
+  filter(housing == TRUE, date <= scraped, date <= end_date, date >= "2016-05-01") %>% 
   count(date)
 
 active_listings_filtered %>% 
@@ -46,7 +63,10 @@ nrow(filter(property, created <= end_date, scraped >= end_date))
 nrow(LTM_property)
 
 # Listing type breakdown
-nrow(filter(LTM_property, listing_type == "Shared room"))/
+nrow(filter(property, created <= end_date, scraped >= end_date, listing_type == "Entire home/apt", housing == TRUE))/
+  nrow(filter(property, created <= end_date, scraped >= end_date, housing == TRUE))
+
+nrow(filter(LTM_property, listing_type == "Entire home/apt"))/
   nrow(LTM_property)
 
 # Number of hosts over last twelve months
@@ -72,7 +92,8 @@ filter(LTM_property, listing_type == "Shared room") %>%
   sum(LTM_property$revenue, na.rm = TRUE)
 
 # YOY growth rate
-nrow(LTM_property) / 
+nrow(filter(property, created <= end_date, scraped >= end_date,
+            housing == TRUE)) / 
   nrow(filter(property, created <= date_yoy, scraped >= date_yoy,
               housing == TRUE))
 
@@ -193,7 +214,7 @@ FREH %>%
 GH %>% 
   st_drop_geometry() %>% 
   group_by(date) %>% 
-  summarize(GH_units = sum(housing_units)) %>% 
+  summarize(GH_units = sum(housing_units)) %>%
   ggplot() +
   geom_line(aes(date, GH_units), colour = "black", size = 1) +
   theme_minimal() +
@@ -206,7 +227,10 @@ GH_total <-
   group_by(date) %>% 
   summarize(GH_units = sum(housing_units)) %>% 
   pull(GH_units) %>% 
-  rollmean(365, align = "right")
+  rollmean(365, align = "right") 
+
+
+GH_total <- GH_total[(length(GH_total) + 1 - n_groups(FREH %>% group_by(date))):length(GH_total)]
 
 housing_loss <- 
   FREH %>% 
@@ -244,18 +268,137 @@ housing %>%
 long_reservations <- 
   daily_compressed %>% 
   filter(status == "R") %>% 
-  left_join({property %>% st_drop_geometry() %>% ungroup() %>% 
-      select(property_ID, created, scraped, housing)}) %>% 
   filter(start_date >= created, end_date <= scraped + 30) %>% 
-  group_by(res_id)
+  group_by(res_ID)
 
 res_length <- 
   long_reservations %>% 
-  group_by(res_id) %>% 
+  group_by(res_ID) %>% 
   summarize(nights = max(end_date) - min(start_date) + 1)
 
 mean(res_length$nights >= 28)
 
+### Listings likely in violation of principal residence requirement ############
+
+## LFRML calculations
+
+# Add ML field to property file
+property <- 
+  daily %>% 
+  filter(date == end_date) %>% 
+  select(property_ID, ML) %>% 
+  left_join(property, .) %>% 
+  mutate(ML = if_else(is.na(ML), FALSE, ML))
+
+# Add n_reserved and n_available fields
+property <- 
+  daily %>% 
+  filter(status == "R") %>% 
+  group_by(property_ID) %>% 
+  summarize(n_reserved = n()) %>% 
+  left_join(property, .)
+
+property <- 
+  daily %>% 
+  filter(status == "R" | status == "A") %>% 
+  group_by(property_ID) %>% 
+  summarize(n_available = n()) %>% 
+  left_join(property, .)
+
+# Add LFRML field
+property <- 
+  property %>%
+  group_by(host_ID, listing_type) %>% 
+  mutate(LFRML = case_when(
+    listing_type != "Entire home/apt" ~ FALSE,
+    ML == FALSE                       ~ FALSE,
+    n_available == min(n_available)   ~ TRUE,
+    TRUE                              ~ FALSE)) %>% 
+  ungroup()
+
+
+# Resolve ties
+property <- 
+  property %>% 
+  group_by(host_ID, listing_type) %>% 
+  mutate(prob = sample(0:10000, n(), replace = TRUE),
+         LFRML = if_else(
+           sum(LFRML) > 1 & prob != max(prob), FALSE, LFRML)) %>% 
+  select(-prob)
+
+
+# Add GH status
+GH_list <-
+  GH %>% 
+  filter(date == end_date) %>% 
+  pull(property_IDs) %>%
+  unlist() %>%
+  unique()
+
+property <-
+  property %>% 
+  mutate(GH = if_else(property_ID %in% GH_list, TRUE, FALSE))
+
+# Add FREH status
+property <- 
+  FREH %>% 
+  filter(date == end_date) %>% 
+  mutate(FREH = TRUE) %>% 
+  left_join(property, .) %>% 
+  mutate(FREH = if_else(is.na(FREH), FALSE, FREH))
+
+# Add Legal field
+legal <- 
+  property %>%
+  filter(housing == TRUE, created <= end_date, scraped >= end_date) %>% 
+  mutate(legal = case_when(
+    GH == TRUE                     ~ FALSE,
+    listing_type == "Shared room"  ~ TRUE,
+    listing_type == "Private room" ~ TRUE,
+    FREH == TRUE                   ~ FALSE,
+    LFRML == TRUE                  ~ TRUE,
+    ML == TRUE                     ~ FALSE,
+    TRUE                           ~ TRUE))
+
+mean(legal$FREH, na.rm = TRUE)
+mean(legal$GH, na.rm = TRUE)
+mean(legal$LFRML, na.rm = TRUE)
+mean(legal$ML, na.rm = TRUE)
+mean(legal$legal, na.rm = TRUE)
+
+## Alternate approach
+
+property %>%
+  st_drop_geometry() %>% 
+  filter(housing == TRUE, created <= end_date, scraped >= end_date) %>% 
+  nrow()
+
+property %>%
+  st_drop_geometry() %>% 
+  filter(housing == TRUE, created <= end_date, scraped >= end_date) %>%
+  filter(listing_type == "Entire home/apt") %>% 
+  filter(ML == TRUE) %>% 
+  nrow()
+
+property %>%
+  st_drop_geometry() %>% 
+  filter(housing == TRUE, created <= end_date, scraped >= end_date) %>%
+  filter(listing_type == "Entire home/apt") %>% 
+  filter(ML == TRUE & LFRML == FALSE) %>% 
+  nrow()
+
+property %>%
+  st_drop_geometry() %>% 
+  filter(housing == TRUE, created <= end_date, scraped >= end_date) %>%
+  filter(listing_type == "Entire home/apt") %>% 
+  filter((ML == TRUE & LFRML == FALSE) | (FREH == TRUE)) %>% 
+  nrow()
+
+property %>%
+  st_drop_geometry() %>% 
+  filter(housing == TRUE, created <= end_date, scraped >= end_date) %>% 
+  filter(GH == TRUE) %>% 
+  nrow()
 
 ## Neighbourhood analysis
 airbnb_neighbourhoods <- tibble(neighbourhood = character(0), active_listings = numeric(0), 
@@ -305,8 +448,8 @@ for (n in c(1:nrow(neighbourhoods))) {
                                            filter(date == end_date) %>% 
                                            inner_join(FREH, .))
   
-  temp <- strr_ghost(neighbourhood_property, property_ID, host_ID, created, scraped, start_date,
-                     end_date, listing_type) %>% 
+  temp <- neighbourhood_property %>% 
+    strr_ghost() %>% 
     filter(date == end_date) %>% 
     group_by(ghost_ID) %>% 
     summarize(n = sum(housing_units)) %>% 
@@ -336,9 +479,9 @@ for (n in c(1:nrow(neighbourhoods))) {
     filter(created <= date_yoy,
            scraped >= date_yoy) %>% 
     nrow()
-  
-  temp2 <- strr_ghost(neighbourhood_property, property_ID, host_ID, created, scraped, "2017-05-01",
-                     end_date = date_yoy, listing_type) %>% 
+
+  temp2 <- neighbourhood_property %>% 
+    strr_ghost() %>% 
     filter(date == date_yoy) %>% 
     group_by(ghost_ID) %>% 
     summarize(n = sum(housing_units)) %>% 
@@ -372,126 +515,4 @@ airbnb_neighbourhoods <- airbnb_neighbourhoods %>%
 
 save(airbnb_neighbourhoods, file = "data/airbnb_neighbourhoods.Rdata")
 
-################ NOT INCLUDED AS OF RIGHT NOW ###############################
-### Listings likely in violation of principal residence requirement ############
-
-## LFRML calculations
-
-# Add ML field to property file
-property <- 
-  daily %>% 
-  filter(date == "2019-04-30") %>% 
-  select(property_ID, ML) %>% 
-  left_join(property, .) %>% 
-  mutate(ML = if_else(is.na(ML), FALSE, ML))
-
-# Add n_reserved and n_available fields
-property <- 
-  daily %>% 
-  filter(status == "R") %>% 
-  group_by(property_ID) %>% 
-  summarize(n_reserved = n()) %>% 
-  left_join(property, .)
-
-property <- 
-  daily %>% 
-  filter(status == "R" | status == "A") %>% 
-  group_by(property_ID) %>% 
-  summarize(n_available = n()) %>% 
-  left_join(property, .)
-
-# Add LFRML field
-property <- 
-  property %>%
-  group_by(host_ID, listing_type) %>% 
-  mutate(LFRML = case_when(
-    listing_type != "Entire home/apt" ~ FALSE,
-    ML == FALSE                       ~ FALSE,
-    n_available == min(n_available)   ~ TRUE,
-    TRUE                              ~ FALSE)) %>% 
-  ungroup()
-
-
-# Resolve ties
-property <- 
-  property %>% 
-  group_by(host_ID, listing_type) %>% 
-  mutate(prob = sample(0:10000, n(), replace = TRUE),
-         LFRML = if_else(
-           sum(LFRML) > 1 & prob != max(prob), FALSE, LFRML)) %>% 
-  select(-prob)
-
-
-# Add GH status
-GH_list <-
-  GH %>% 
-  filter(date == "2019-04-30") %>% 
-  pull(property_IDs) %>%
-  unlist() %>%
-  unique()
-
-property <-
-  property %>% 
-  mutate(GH = if_else(property_ID %in% GH_list, TRUE, FALSE))
-
-# Add FREH status
-property <- 
-  FREH %>% 
-  filter(date == "2019-04-30") %>% 
-  mutate(FREH = TRUE) %>% 
-  left_join(property, .) %>% 
-  mutate(FREH = if_else(is.na(FREH), FALSE, FREH))
-
-# Add Legal field
-legal <- 
-  property %>%
-  filter(housing == TRUE, created <= "2019-04-30", scraped >= "2019-04-30") %>% 
-  mutate(legal = case_when(
-    GH == TRUE                     ~ FALSE,
-    listing_type == "Shared room"  ~ TRUE,
-    listing_type == "Private room" ~ TRUE,
-    FREH == TRUE                   ~ FALSE,
-    LFRML == TRUE                  ~ TRUE,
-    ML == TRUE                     ~ FALSE,
-    TRUE                           ~ TRUE))
-
-mean(legal$FREH, na.rm = TRUE)
-mean(legal$GH, na.rm = TRUE)
-mean(legal$LFRML, na.rm = TRUE)
-mean(legal$ML, na.rm = TRUE)
-mean(legal$legal, na.rm = TRUE)
-
-## Alternate approach
-
-property %>%
-  st_drop_geometry() %>% 
-  filter(housing == TRUE, created <= "2019-04-30", scraped >= "2019-04-30") %>% 
-  nrow()
-
-property %>%
-  st_drop_geometry() %>% 
-  filter(housing == TRUE, created <= "2019-04-30", scraped >= "2019-04-30") %>%
-  filter(listing_type == "Entire home/apt") %>% 
-  filter(ML == TRUE) %>% 
-  nrow()
-
-property %>%
-  st_drop_geometry() %>% 
-  filter(housing == TRUE, created <= "2019-04-30", scraped >= "2019-04-30") %>%
-  filter(listing_type == "Entire home/apt") %>% 
-  filter(ML == TRUE & LFRML == FALSE) %>% 
-  nrow()
-
-property %>%
-  st_drop_geometry() %>% 
-  filter(housing == TRUE, created <= "2019-04-30", scraped >= "2019-04-30") %>%
-  filter(listing_type == "Entire home/apt") %>% 
-  filter((ML == TRUE & LFRML == FALSE) | (FREH == TRUE)) %>% 
-  nrow()
-
-property %>%
-  st_drop_geometry() %>% 
-  filter(housing == TRUE, created <= "2019-04-30", scraped >= "2019-04-30") %>% 
-  filter(GH == TRUE) %>% 
-  nrow()
 
