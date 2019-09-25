@@ -440,27 +440,24 @@ for (n in c(1:nrow(neighbourhoods))) {
              status == "R" ) %>%
     summarise(sum_revenue = sum(price, na.rm = TRUE)*exchange_rate)
   
-  airbnb_neighbourhoods[n,6] <-      nrow(neighbourhood_daily %>% 
-                                            filter(date == end_date) %>% 
-                                            inner_join(GH, .))
+  airbnb_neighbourhoods[n,6] <-       ifelse(neighbourhood_daily %>% 
+                                               filter(date == end_date) %>% 
+                                               inner_join(GH, .) %>% nrow() == 0,
+                                             0,
+                                             neighbourhood_daily %>% 
+                                               filter(date == end_date) %>% 
+                                               inner_join(GH, .) %>% 
+                                               select(ghost_ID, housing_units) %>% 
+                                               st_drop_geometry() %>% 
+                                               distinct() %>% 
+                                               select(housing_units) %>% 
+                                               sum())
   
   airbnb_neighbourhoods[n,7] <-     nrow(neighbourhood_daily %>% 
                                            filter(date == end_date) %>% 
                                            inner_join(FREH, .))
-  
-  temp <- neighbourhood_property %>% 
-    strr_ghost() %>% 
-    filter(date == end_date) %>% 
-    group_by(ghost_ID) %>% 
-    summarize(n = sum(housing_units)) %>% 
-    ungroup()
-  
-  airbnb_neighbourhoods[n,8] <- ifelse(nrow(temp) == 0, 0, temp %>% 
-                           summarize(GH_housing_loss = sum(n))) %>% 
-    as.numeric() +
-    nrow(neighbourhood_daily %>% 
-           filter(date == end_date) %>% 
-           inner_join(FREH, .))
+
+  airbnb_neighbourhoods[n,8] <-  airbnb_neighbourhoods[n,6] +  airbnb_neighbourhoods[n,7]
   
   airbnb_neighbourhoods[n,9] <- neighbourhood_daily %>%
     filter(date >= start_date, date <= end_date, status == "R") %>%
@@ -479,28 +476,25 @@ for (n in c(1:nrow(neighbourhoods))) {
     filter(created <= date_yoy,
            scraped >= date_yoy) %>% 
     nrow()
-
-  temp2 <- neighbourhood_property %>% 
-    strr_ghost() %>% 
-    filter(date == date_yoy) %>% 
-    group_by(ghost_ID) %>% 
-    summarize(n = sum(housing_units)) %>% 
-    ungroup()
   
-  airbnb_neighbourhoods[n,11] <- (ifelse(nrow(temp) == 0, 0, temp %>% 
-                                         summarize(GH_housing_loss = sum(n))) %>% 
-    as.numeric() +
-    nrow(neighbourhood_daily %>% 
-           filter(date == end_date) %>% 
-           inner_join(FREH, .)))/
-    (ifelse(nrow(temp2) == 0, 0, temp2 %>% 
-              summarize(GH_housing_loss = sum(n))) %>% 
-       as.numeric() +
-       nrow(neighbourhood_daily %>% 
+  airbnb_neighbourhoods[n,11] <- airbnb_neighbourhoods[n, 8] /
+    (ifelse(neighbourhood_daily %>% 
               filter(date == date_yoy) %>% 
-              inner_join(FREH, .)))
-  
-  rm(neighbourhood_property, neighbourhood_daily, temp, temp2)
+              inner_join(GH, .) %>% nrow() == 0,
+            0,
+            neighbourhood_daily %>% 
+              filter(date == date_yoy) %>% 
+              inner_join(GH, .) %>% 
+              select(ghost_ID, housing_units) %>% 
+              st_drop_geometry() %>% 
+              distinct() %>% 
+              select(housing_units) %>% 
+              sum()) +
+      nrow(neighbourhood_daily %>% 
+             filter(date == end_date) %>% 
+             inner_join(FREH, .)))
+    
+  rm(neighbourhood_property, neighbourhood_daily)
 }
 
 # Add census variables and geometries
@@ -511,7 +505,8 @@ airbnb_neighbourhoods <- airbnb_neighbourhoods %>%
 # Add housing loss as percentage of dwellings
 
 airbnb_neighbourhoods <- airbnb_neighbourhoods %>% 
-  mutate(housing_loss_pct = housing_loss/households)
+  mutate(housing_loss_pct = housing_loss/households,
+         active_listings_pct = active_listings/households)
 
 save(airbnb_neighbourhoods, file = "data/airbnb_neighbourhoods.Rdata")
 
