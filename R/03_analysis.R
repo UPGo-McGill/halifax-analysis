@@ -497,7 +497,7 @@ for (n in c(1:nrow(neighbourhoods))) {
   rm(neighbourhood_property, neighbourhood_daily)
 }
 
-# Add census variables and geometries
+# Add census variables, names, and geometries
 
 airbnb_neighbourhoods <- airbnb_neighbourhoods %>% 
   left_join(neighbourhoods)
@@ -510,4 +510,48 @@ airbnb_neighbourhoods <- airbnb_neighbourhoods %>%
 
 save(airbnb_neighbourhoods, file = "data/airbnb_neighbourhoods.Rdata")
 
+# Neighbourhood analysis
 
+# Top ten active listings
+airbnb_neighbourhoods %>% 
+  arrange(desc(active_listings)) %>% 
+  slice(1:10) %>% 
+  select(name, active_listings)
+
+# Active listings/dwelling
+airbnb_neighbourhoods %>% 
+  arrange(desc(active_listings_pct)) %>% 
+  slice(1:10) %>% 
+  select(name, active_listings_pct)
+
+# Active listings YOY growth rate
+airbnb_neighbourhoods %>% 
+  filter(active_listings_pct >= 0.01) %>% 
+  arrange(desc(active_listings_yoy)) %>% 
+  slice(1:10) %>% 
+  select(name, active_listings_yoy)
+
+# Revenue
+airbnb_neighbourhoods %>% 
+  arrange(desc(revenue_LTM)) %>% 
+  slice(1:10) %>% 
+  select(name, revenue_LTM)
+
+# Housing loss
+airbnb_neighbourhoods %>% 
+  arrange(desc(housing_loss)) %>% 
+  slice(1:10) %>% 
+  select(name, housing_loss)
+
+# Housing loss/dwelling
+airbnb_neighbourhoods %>% 
+  arrange(desc(housing_loss_pct)) %>% 
+  slice(1:10) %>% 
+  select(name, housing_loss_pct)
+
+# Housing loss YOY growth rate
+airbnb_neighbourhoods %>% 
+  filter(active_listings_pct >= 0.01) %>% 
+  arrange(desc(housing_loss_yoy)) %>% 
+  slice(1:10) %>% 
+  select(name, housing_loss_pct)

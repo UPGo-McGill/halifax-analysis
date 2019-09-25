@@ -31,6 +31,11 @@ neighbourhoods <-
   st_buffer(0) %>% 
   summarize(count = n())
 
+names <- read_csv("data/names.csv")
+
+neighbourhoods <- neighbourhoods %>% 
+  left_join(names)
+
 ### Census import #############################################################
 CTs_halifax <-
   get_census(

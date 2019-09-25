@@ -229,7 +229,6 @@ ML_table %>%
 
 ### FIGURE 7 - housing loss
 
-
 housing_graph <- 
   ggplot(housing_loss) +
   geom_col(aes(date, `Housing units`, fill = `Listing type`),
@@ -251,9 +250,9 @@ ggsave("output/figure_7.pdf", plot = housing_graph, width = 8, height = 7,
 airbnb_neighbourhoods %>% 
   ggplot() +
   geom_sf(aes(fill = housing_loss_pct, geometry = geometry)) +
-  scale_fill_gradientn(colors = c("steelblue4", "darkseagreen4", "darkseagreen1", "darkseagreen1"),
-                       values = (c(0, 0.4, 0.6, 1)),
-                       limits = c(0, 0.02)) + 
+  scale_fill_gradientn(colors = c("darkblue", "lightblue", "white"),
+                       values = (c(0, 0.6, 1)),
+                       limits = c(0, 0.022)) + 
   # geom_sf(data = HRM_streets, colour = alpha("grey", 0.5)) +
   guides(fill = guide_colorbar(title = "Percentage of housing lost to short-term rentals"))+
   theme(axis.line = element_blank(),
