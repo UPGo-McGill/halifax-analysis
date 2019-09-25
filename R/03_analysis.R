@@ -410,8 +410,7 @@ for (n in c(1:nrow(neighbourhoods))) {
   
   neighbourhood_property <- property %>% 
     filter(housing == TRUE) %>% 
-    st_join(neighbourhoods[n, "geometry"],
-            join = st_within, left = FALSE)
+    filter(neighbourhood == neighbourhoods$neighbourhood[n])
   
   neighbourhood_daily <- daily %>% 
     filter(property_ID %in% neighbourhood_property$property_ID)
@@ -526,7 +525,7 @@ airbnb_neighbourhoods %>%
 
 # Active listings YOY growth rate
 airbnb_neighbourhoods %>% 
-  filter(active_listings_pct >= 0.01) %>% 
+  filter(active_listings >= 50) %>% 
   arrange(desc(active_listings_yoy)) %>% 
   slice(1:10) %>% 
   select(name, active_listings_yoy)
@@ -551,7 +550,7 @@ airbnb_neighbourhoods %>%
 
 # Housing loss YOY growth rate
 airbnb_neighbourhoods %>% 
-  filter(active_listings_pct >= 0.01) %>% 
+  filter(active_listings >=50) %>% 
   arrange(desc(housing_loss_yoy)) %>% 
   slice(1:10) %>% 
-  select(name, housing_loss_pct)
+  select(name, housing_loss_yoy)

@@ -33,9 +33,7 @@ active_listings_graph <-
 ggsave("output/figure_1.pdf", plot = active_listings_graph, width = 8, 
        height = 5, units = "in", useDingbats = FALSE)
 
-### FIGURE 2 - STR activity in  Canada - not included
-
-### FIGURE 3 - spatial distribution of listings 
+### FIGURE 2 - spatial distribution of listings 
 property_in_HRM <-
   property %>% 
   select(-revenue) %>% 
@@ -77,7 +75,6 @@ property_2019 <-
   mutate(Year = "2019") %>% 
   filter(revenue > 0)
 
-
 map <- 
   rbind(property_2016, property_2017, property_2018, property_2019) %>%
   ggplot() +
@@ -111,7 +108,7 @@ map <-
 ggsave("output/figure_3.pdf", plot = map, width = 8, height = 9, units = "in",
        useDingbats = FALSE)
 
-## FIGURE 4 - bedroom breakdowns
+## FIGURE 3 - bedroom breakdowns
 
 var <- filter(property, created <= end_date, scraped >= end_date, 
               housing == TRUE, listing_type == "Entire home/apt")$bedrooms
@@ -146,7 +143,7 @@ bedroom_graph <-
 ggsave("output/figure_4.pdf", plot = bedroom_graph, width = 8, 
        height = 5, units = "in", useDingbats = FALSE)
 
-### FIGURE 5 - host revenue percentiles graph
+### FIGURE 4 - host revenue percentiles graph
 
 revenue_graph <-
   daily %>%
@@ -179,7 +176,7 @@ revenue_graph <-
 ggsave("output/figure_5.pdf", plot = revenue_graph, width = 8, height = 4, 
        units = "in", useDingbats = FALSE)
 
-### FIGURE 6 - multilistings graph
+### FIGURE 5 - multilistings graph
 ML_summary <- 
   daily %>% 
   group_by(date) %>% 
@@ -227,7 +224,7 @@ ML_table %>%
   theme_minimal() +
   scale_y_continuous(name = NULL, label = percent)
 
-### FIGURE 7 - housing loss
+### FIGURE 6 - housing loss
 
 housing_graph <- 
   ggplot(housing_loss) +
@@ -246,7 +243,7 @@ housing_graph <-
 ggsave("output/figure_7.pdf", plot = housing_graph, width = 8, height = 7, 
        units = "in", useDingbats = FALSE)
 
-### FIGURE 8 - housing loss as percentage of dwellings
+### FIGURE 7 - housing loss as percentage of dwellings
 airbnb_neighbourhoods %>% 
   ggplot() +
   geom_sf(aes(fill = housing_loss_pct, geometry = geometry)) +
@@ -268,3 +265,18 @@ airbnb_neighbourhoods %>%
         legend.justification = c(1,0.1),
         legend.position = c(1,0.1)) 
 
+### FIGURE 8 - illegal listings
+  legal %>%
+    filter(legal == FALSE) %>% 
+  ggplot() +
+  geom_sf(data = HRM_streets, colour = alpha("grey", 0.5)) +
+  geom_sf(aes(colour = legal), alpha = 0.2, 
+          show.legend = FALSE) +
+  scale_colour_manual(name = "Dedicated short-term rentals",
+                      values = c("#B4656F")) + 
+  theme(legend.position = "bottom",
+        legend.spacing.y = unit(10, "pt"),
+        axis.ticks = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        rect = element_blank())
