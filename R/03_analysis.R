@@ -10,7 +10,7 @@ load("data/HRM_daily.Rdata")
 load("data/HRM_streets.Rdata")
 load("data/HRM.Rdata")
 load("data/HRM_daily_compressed.Rdata")
-load("data/neighbourhoods.Rdata")
+load("data/HRM_neighbourhoods.Rdata")
 load("data/CTs_halifax.Rdata")
 
 # Set up dates

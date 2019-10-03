@@ -17,10 +17,11 @@ library(data.table)
 library(ggplot2)
 library(units)
 library(devtools)
-install_github("dwachsmuth/strr", force = TRUE)
+install_github("dwachsmuth/strr")
 library(strr)
 library(spatstat)
 library(polyCub)
+library(mapview)
 
 ### Cancensus api #############################################################
 options(cancensus.api_key = "")
