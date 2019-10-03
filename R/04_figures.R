@@ -9,6 +9,9 @@ load("data/HRM_daily.Rdata")
 load("data/housing_loss.Rdata")
 load("data/airbnb_neighbourhoods.Rdata")
 load("data/HRM_streets.Rdata")
+load("data/HRM_GH.Rdata")
+load("data/HRM_FREH.Rdata")
+load("data/CTs_halifax.Rdata")
 
 # Set up dates
 start_date <- "2018-09-01"
@@ -223,7 +226,6 @@ ML_table %>%
   scale_y_continuous(name = NULL, label = percent)
 
 ### FIGURE 6 - housing loss
-
 housing_graph <- 
   ggplot(housing_loss) +
   geom_col(aes(date, `Housing units`, fill = `Listing type`),
@@ -241,7 +243,7 @@ housing_graph <-
 ggsave("output/figure_7.pdf", plot = housing_graph, width = 8, height = 7, 
        units = "in", useDingbats = FALSE)
 
-### FIGURE 7 - housing loss as percentage of dwellings
+### FIGURE 7 - housing loss as percentage of dwellings at the neighbourhood scale
 airbnb_neighbourhoods %>% 
   ggplot() +
   geom_sf(aes(fill = housing_loss_pct, geometry = geometry)) +
@@ -263,14 +265,70 @@ airbnb_neighbourhoods %>%
         legend.justification = c(1,0.1),
         legend.position = c(1,0.1)) 
 
-### FIGURE 8 - illegal listings
+### FIGURE 8 - housing loss as percentage of dwellings at the census tract scale
+housing_loss_CT <- tibble(Geo_UID = character(0), housing_loss = numeric (0))
+
+for (n in c(1:nrow(CTs_halifax))) {
+  
+ CT_property <- property %>% 
+    filter(housing == TRUE) %>% 
+    filter(CT_GeoUID == CTs_halifax$Geo_UID[n])
+  
+  CT_daily <- daily %>% 
+    filter(property_ID %in% CT_property$property_ID)
+  
+  housing_loss_CT[n,1] <- CTs_halifax$Geo_UID[n]
+  
+  housing_loss_CT[n,2] <-       ifelse(CT_daily %>% 
+                                               filter(date == end_date) %>% 
+                                               inner_join(GH, .) %>% nrow() == 0,
+                                             0,
+                                             CT_daily %>% 
+                                               filter(date == end_date) %>% 
+                                               inner_join(GH, .) %>% 
+                                               select(ghost_ID, housing_units) %>% 
+                                               st_drop_geometry() %>% 
+                                               distinct() %>% 
+                                               select(housing_units) %>% 
+                                               sum()) +
+  
+                                           nrow(CT_daily %>% 
+                                           filter(date == end_date) %>% 
+                                           inner_join(FREH, .))
+ }
+
+CTs_halifax <- housing_loss_CT %>% 
+  mutate(housing_loss_pct = housing_loss/households) %>% 
+  left_join(CTs_halifax)
+
+CTs_halifax %>% 
+  ggplot() +
+  geom_sf(aes(fill = housing_loss_pct, geometry = geometry)) +
+  scale_fill_gradientn(colors = c("darkblue", "lightblue", "white"),
+                       values = (c(0, 0.6, 1)),
+                       limits = c(0, 0.031)) + 
+  #geom_sf(data = HRM_streets, colour = alpha("grey", 0.5)) +
+  guides(fill = guide_colorbar(title = "Percentage of housing lost to short-term rentals"))+
+  theme(axis.line = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 12),
+        panel.background = element_blank(),
+        panel.border = element_blank(),
+        legend.position = "bottom") 
+
+### FIGURE 9 - legal listings (principal residences)
   legal %>%
     filter(legal == TRUE) %>% 
   ggplot() +
   geom_sf(data = HRM_streets, colour = alpha("grey", 0.5)) +
   geom_sf(aes(colour = legal), alpha = 0.2, 
-          show.legend = FALSE) +
-  scale_colour_manual(name = "Listings operating out of non-primary residences",
+          show.legend = TRUE) +
+  scale_colour_manual(name = "Listings operating out of primary residences",
                       values = c("#4295A8")) + 
   theme(legend.position = "bottom",
         legend.spacing.y = unit(10, "pt"),
@@ -279,4 +337,34 @@ airbnb_neighbourhoods %>%
         axis.text.y = element_blank(),
         rect = element_blank())
   
- # colour palette:  #B4656F","#4295A8"
+### FIGURE 10 - illegal listings (NOT principal residences)
+  legal %>%
+    filter(legal == FALSE) %>% 
+    ggplot() +
+    geom_sf(data = HRM_streets, colour = alpha("grey", 0.5)) +
+    geom_sf(aes(colour = legal), alpha = 0.2, 
+            show.legend = TRUE) +
+    scale_colour_manual(name = "Listings operating out of non-primary residences",
+                        values = c("#B4656F")) + 
+    theme(legend.position = "bottom",
+          legend.spacing.y = unit(10, "pt"),
+          axis.ticks = element_blank(),
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
+          rect = element_blank())
+  
+### FIGURE 11 - listings by legality
+  legal %>%
+    ggplot() +
+    geom_sf(data = HRM_streets, colour = alpha("grey", 0.5)) +
+    geom_sf(aes(colour = legal), alpha = 0.2, 
+            show.legend = TRUE) +
+    scale_colour_manual(name = "Listings operating out of primary residences",
+                        values = c("#B4656F", "#4295A8")) + 
+    theme(legend.position = "bottom",
+          legend.spacing.y = unit(10, "pt"),
+          axis.ticks = element_blank(),
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
+          rect = element_blank())
+  

@@ -335,7 +335,6 @@ property <-
            sum(LFRML) > 1 & prob != max(prob), FALSE, LFRML)) %>% 
   select(-prob)
 
-
 # Add GH status
 GH_list <-
   GH %>% 
@@ -375,41 +374,7 @@ mean(legal$LFRML, na.rm = TRUE)
 mean(legal$ML, na.rm = TRUE)
 mean(legal$legal, na.rm = TRUE)
 
-## Alternate approach
-
-property %>%
-  st_drop_geometry() %>% 
-  filter(housing == TRUE, created <= end_date, scraped >= end_date) %>% 
-  nrow()
-
-property %>%
-  st_drop_geometry() %>% 
-  filter(housing == TRUE, created <= end_date, scraped >= end_date) %>%
-  filter(listing_type == "Entire home/apt") %>% 
-  filter(ML == TRUE) %>% 
-  nrow()
-
-property %>%
-  st_drop_geometry() %>% 
-  filter(housing == TRUE, created <= end_date, scraped >= end_date) %>%
-  filter(listing_type == "Entire home/apt") %>% 
-  filter(ML == TRUE & LFRML == FALSE) %>% 
-  nrow()
-
-property %>%
-  st_drop_geometry() %>% 
-  filter(housing == TRUE, created <= end_date, scraped >= end_date) %>%
-  filter(listing_type == "Entire home/apt") %>% 
-  filter((ML == TRUE & LFRML == FALSE) | (FREH == TRUE)) %>% 
-  nrow()
-
-property %>%
-  st_drop_geometry() %>% 
-  filter(housing == TRUE, created <= end_date, scraped >= end_date) %>% 
-  filter(GH == TRUE) %>% 
-  nrow()
-
-## Neighbourhood analysis
+## Neighbourhood analysis ####################################
 airbnb_neighbourhoods <- tibble(neighbourhood = character(0), active_listings = numeric(0), 
                  active_listings_LTM = numeric (0), EH_pct = numeric (0), revenue_LTM = numeric (0), 
                  GH = numeric (0), FREH = numeric (0),  housing_loss = numeric (0), 
@@ -573,7 +538,7 @@ airbnb_neighbourhoods %>%
   slice(1:10) %>% 
   select(name, housing_loss_yoy)
 
-## Save files
+## Save files #####################################
 save(active_listings_filtered, file = "data/active_listings_filtered.Rdata")
 save(property, file = "data/HRM_property.Rdata")
 save(housing_loss, file = "data/housing_loss.Rdata")
