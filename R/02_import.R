@@ -116,17 +116,24 @@ ML_daily <-
   filter(property_ID %in% !! ML_property$property_ID) %>% 
   collect()
 
+# Atlantic Canada
+daily_AC <- 
+  daily_all %>% 
+  filter(country == "Canada", region %in% c("Nova Scotia", "New Brunswick", 
+                                            "Prince Edward Island", "Newfoundland and Labrador")) %>% 
+  collect()
+
 rm(con, daily_all, property_all)
 
 ### Process files ##############################################################
 
 ## Set up property and daily files
 
-start_date <- "2018-05-01"
-end_date <- "2019-04-30"
+start_date <- "2018-09-01"
+end_date <- "2019-08-31"
 
 daily <- 
-  strr_expand_daily(daily_compressed, cores = 4)
+  strr_expand(daily_compressed, cores = 4)
 
 daily <- 
   daily %>% 
@@ -147,8 +154,10 @@ strr_raffle(CTs_halifax, Geo_UID, households) %>%
 
 ## Add last twelve months revenue
 
-exchange_rate <- mean(1.2873,	1.3129, 1.3130, 1.3041, 1.3037, 1.3010, 1.3200,
-                      1.3432, 1.3301, 1.3206, 1.3368, 1.3378)
+exchange_rate <- mean(1.3037, 1.3010, 1.3200,
+                      1.3432, 1.3301, 1.3206, 
+                      1.3368, 1.3378, 1.3438,
+                      1.3188, 1.3046, 1.3316)
 
 property <- 
   daily %>% 
@@ -170,7 +179,7 @@ LTM_property <- property %>%
 ## Prepare ML_daily
 
 ML_daily <- 
-  strr_expand_daily(ML_daily, cores = 4)
+  strr_expand(ML_daily, cores = 4)
 
 ML_daily <- 
   ML_daily %>% 
@@ -223,13 +232,6 @@ GH <-
   filter(housing == TRUE) %>% 
   strr_ghost(start_date = "2014-10-01", end_date = end_date)
 
-
-### Atlantic Canada #############################################################
-daily_AC <- 
-  daily_all %>% 
-  filter(country == "Canada", region %in% c("Nova Scotia", "New Brunswick", 
-                                            "Prince Edward Island", "Newfoundland and Labrador")) %>% 
-  collect()
 
 ### Save files #################################################################
 

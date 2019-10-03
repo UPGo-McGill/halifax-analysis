@@ -14,13 +14,15 @@ load("data/neighbourhoods.Rdata")
 load("data/CTs_halifax.Rdata")
 
 # Set up dates
-start_date <- "2018-05-01"
-end_date <- "2019-04-30"
-date_yoy <- "2018-04-30"
+start_date <- "2018-09-01"
+end_date <- "2019-08-31"
+date_yoy <- "2018-08-31"
 
 # Exchange rate (average over last twelve months)
-exchange_rate <- mean(1.2873,	1.3129, 1.3130, 1.3041, 1.3037, 1.3010, 1.3200,
-                      1.3432, 1.3301, 1.3206, 1.3368, 1.3378)
+exchange_rate <- mean(1.3037, 1.3010, 1.3200,
+                      1.3432, 1.3301, 1.3206, 
+                      1.3368, 1.3378, 1.3438,
+                      1.3188, 1.3046, 1.3316)
 
 ### Region comparison ###############################
          
@@ -49,7 +51,7 @@ active_listings <-
 
 active_listings_filtered <- 
   daily %>% 
-  filter(housing == TRUE, date <= scraped, date <= end_date, date >= "2016-05-01") %>% 
+  filter(housing == TRUE, date <= scraped, date <= "2019-07-31", date >= "2016-05-01") %>% 
   count(date)
 
 active_listings_filtered %>% 
