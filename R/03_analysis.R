@@ -27,18 +27,18 @@ exchange_rate <- mean(1.3037, 1.3010, 1.3200,
 ### Region comparison ###############################
          
 cities <- daily_AC %>% 
-  filter(end_date == "2019-04-30") %>% 
+  filter(end_date == "2019-08-31") %>% 
   count(city) 
 
 region <- daily_AC %>% 
-  filter(end_date == "2019-04-30") %>% 
+  filter(end_date == "2019-08-31") %>% 
   count(region)
 
 revenue <- daily_AC %>% 
   filter(status == "R") %>% 
   mutate(revenue = (price) * exchange_rate * (end_date - start_date)) %>% 
-  group_by(region) %>% 
-  summarise(region_revenue = sum(revenue))
+  group_by(city) %>% 
+  summarise(city_revenue = sum(revenue))
 
 
 ### Active daily listings ######################################################
@@ -51,7 +51,7 @@ active_listings <-
 
 active_listings_filtered <- 
   daily %>% 
-  filter(housing == TRUE, date <= scraped, date <= "2019-07-31", date >= "2016-05-01") %>% 
+  filter(housing == TRUE, date <= scraped, date <= end_date, date >= "2016-05-01") %>% 
   count(date)
 
 active_listings_filtered %>% 
@@ -59,16 +59,16 @@ active_listings_filtered %>%
 
 ## Active listings from property file
 # All listings
-nrow(filter(property, created <= end_date, scraped >= end_date))
+nrow(filter(property, created <= end_date, scraped >= end_date, housing == TRUE))
 
 # Housing listings over the last twelve months
 nrow(LTM_property)
 
 # Listing type breakdown
-nrow(filter(property, created <= end_date, scraped >= end_date, listing_type == "Entire home/apt", housing == TRUE))/
-  nrow(filter(property, created <= end_date, scraped >= end_date, housing == TRUE))
+nrow(filter(property, created <= end_date, scraped >= end_date, listing_type == "Entire home/apt"))/
+  nrow(filter(property, created <= end_date, scraped >= end_date))
 
-nrow(filter(LTM_property, listing_type == "Entire home/apt"))/
+nrow(filter(LTM_property, listing_type == "Shared room"))/
   nrow(LTM_property)
 
 # Number of hosts over last twelve months
@@ -76,7 +76,7 @@ length(unique(LTM_property$host_ID))
 
 # Hosts by listing type
 LTM_property %>% 
-  filter(listing_type == "Shared room") %>% 
+  filter(listing_type == "Entire home/apt") %>% 
   select(host_ID) %>% 
   st_drop_geometry() %>% 
   unique() %>% 
@@ -87,7 +87,7 @@ LTM_property %>%
 sum(LTM_property$revenue, na.rm = TRUE)
 
 # LTM revenue by property type
-filter(LTM_property, listing_type == "Shared room") %>% 
+filter(LTM_property, listing_type == "Entire home/apt") %>% 
   select(revenue) %>% 
   st_drop_geometry() %>% 
   sum(na.rm = TRUE) /
@@ -197,6 +197,13 @@ ML_table <-
   gather(Listings, Revenue, key = `Multilisting percentage`, value = Value)
 
 ML_table %>% 
+  filter(date == end_date)
+
+# Entire home multilistings
+daily %>% 
+ filter(listing_type == "Entire home/apt") %>% 
+  group_by(date) %>% 
+  summarize(Listings = sum(ML)) %>% 
   filter(date == end_date)
 
 ### Housing loss ###############################################################
@@ -509,9 +516,18 @@ airbnb_neighbourhoods <- airbnb_neighbourhoods %>%
   mutate(housing_loss_pct = housing_loss/households,
          active_listings_pct = active_listings/households)
 
-save(airbnb_neighbourhoods, file = "data/airbnb_neighbourhoods.Rdata")
-
 # Neighbourhood analysis
+
+## Neighbourhood primary residences
+legal %>% 
+  filter(legal == FALSE) %>% 
+  group_by(neighbourhood) %>% 
+  summarize(housing_returned = n()) %>% 
+  st_drop_geometry() %>% 
+  left_join(neighbourhoods) %>% 
+  select(name, housing_returned, households) %>% 
+  mutate(housing_returned_pct = housing_returned/households) %>% 
+  view()
 
 # Top ten active listings
 airbnb_neighbourhoods %>% 
@@ -556,3 +572,10 @@ airbnb_neighbourhoods %>%
   arrange(desc(housing_loss_yoy)) %>% 
   slice(1:10) %>% 
   select(name, housing_loss_yoy)
+
+## Save files
+save(active_listings_filtered, file = "data/active_listings_filtered.Rdata")
+save(property, file = "data/HRM_property.Rdata")
+save(housing_loss, file = "data/housing_loss.Rdata")
+save(airbnb_neighbourhoods, file = "data/airbnb_neighbourhoods.Rdata")
+save(legal, file = "data/legal.Rdata")

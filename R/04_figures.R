@@ -2,20 +2,18 @@
 
 source("R/01_helper_functions.R")
 
+load("data/active_listings_filtered.Rdata")
 load("data/HRM_property.Rdata")
-load("data/HRM_LTM_property.Rdata")
-load("data/HRM_FREH.Rdata")
-load("data/HRM_GH.Rdata")
-load("data/HRM_daily.Rdata")
-load("data/HRM_streets.Rdata")
 load("data/HRM.Rdata")
-load("data/HRM_daily_compressed.Rdata")
+load("data/HRM_daily.Rdata")
+load("data/housing_loss.Rdata")
 load("data/airbnb_neighbourhoods.Rdata")
+load("data/HRM_streets.Rdata")
 
 # Set up dates
-start_date <- "2018-05-01"
-end_date <- "2019-04-30"
-date_yoy <- "2018-04-30"
+start_date <- "2018-09-01"
+end_date <- "2019-08-31"
+date_yoy <- "2018-08-31"
 
 
 ### FIGURE 1 - active listings
@@ -41,7 +39,7 @@ property_in_HRM <-
 
 property_2016 <- 
   daily %>% 
-  filter(status == "R", date >= "2015-05-01", date <= "2016-04-30") %>% 
+  filter(status == "R", date >= "2015-09-01", date <= "2016-08-31") %>% 
   group_by(property_ID) %>% 
   summarize(revenue = sum(price) * exchange_rate) %>% 
   left_join(filter(property_in_HRM, housing == TRUE), .) %>% 
@@ -50,7 +48,7 @@ property_2016 <-
 
 property_2017 <- 
   daily %>% 
-  filter(status == "R", date >= "2016-05-01", date <= "2017-04-30") %>% 
+  filter(status == "R", date >= "2016-09-01", date <= "2017-08-31") %>% 
   group_by(property_ID) %>% 
   summarize(revenue = sum(price) * exchange_rate) %>% 
   left_join(filter(property_in_HRM, housing == TRUE), .) %>% 
@@ -59,7 +57,7 @@ property_2017 <-
 
 property_2018 <- 
   daily %>% 
-  filter(status == "R", date >= "2017-05-01", date <= "2018-04-30") %>% 
+  filter(status == "R", date >= "2017-09-01", date <= "2018-08-31") %>% 
   group_by(property_ID) %>% 
   summarize(revenue = sum(price) * exchange_rate) %>% 
   left_join(filter(property_in_HRM, housing == TRUE), .) %>% 
@@ -117,7 +115,7 @@ df <- expand.grid(y = 1:20, x = 1:20)
 categ_table <- round(table(var) * ((20*20)/(length(var))))
 # note: sum from categ_table such that there are only 6 categories
 # manually enter the following numbers.
-categ_table <- c(22, 136, 127, 82, 24, 9)
+categ_table <- c(25, 132, 128, 84, 21, 10)
 names(categ_table) <- c("0 (studio)", "1",  "2", "3", "4", "5+")
 df$category <- factor(rep(names(categ_table), categ_table))  
 
@@ -249,7 +247,7 @@ airbnb_neighbourhoods %>%
   geom_sf(aes(fill = housing_loss_pct, geometry = geometry)) +
   scale_fill_gradientn(colors = c("darkblue", "lightblue", "white"),
                        values = (c(0, 0.6, 1)),
-                       limits = c(0, 0.022)) + 
+                       limits = c(0, 0.028)) + 
   # geom_sf(data = HRM_streets, colour = alpha("grey", 0.5)) +
   guides(fill = guide_colorbar(title = "Percentage of housing lost to short-term rentals"))+
   theme(axis.line = element_blank(),
@@ -267,16 +265,18 @@ airbnb_neighbourhoods %>%
 
 ### FIGURE 8 - illegal listings
   legal %>%
-    filter(legal == FALSE) %>% 
+    filter(legal == TRUE) %>% 
   ggplot() +
   geom_sf(data = HRM_streets, colour = alpha("grey", 0.5)) +
   geom_sf(aes(colour = legal), alpha = 0.2, 
           show.legend = FALSE) +
-  scale_colour_manual(name = "Dedicated short-term rentals",
-                      values = c("#B4656F")) + 
+  scale_colour_manual(name = "Listings operating out of non-primary residences",
+                      values = c("#4295A8")) + 
   theme(legend.position = "bottom",
         legend.spacing.y = unit(10, "pt"),
         axis.ticks = element_blank(),
         axis.text.x = element_blank(),
         axis.text.y = element_blank(),
         rect = element_blank())
+  
+ # colour palette:  #B4656F","#4295A8"

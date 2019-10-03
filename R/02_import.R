@@ -34,7 +34,7 @@ neighbourhoods <-
 names <- read_csv("data/names.csv")
 
 neighbourhoods <- neighbourhoods %>% 
-  left_join(names)
+  left_join(names, by = "neighbourhood")
 
 ### Census import #############################################################
 CTs_halifax <-
