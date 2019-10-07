@@ -28,8 +28,8 @@ HRM_streets <-
 
 con <- RPostgres::dbConnect(
   RPostgres::Postgres(),
-  user = "amybolt",
-  password = "",
+  user = "charlottebelot",
+  password = "iR7AXqmyKmChXCtFMMjyzjbH",
   host = "025wpgs.campus.mcgill.ca",
   dbname = "airdna")
 
