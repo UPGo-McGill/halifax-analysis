@@ -372,6 +372,15 @@ mean(legal$LFRML, na.rm = TRUE)
 mean(legal$ML, na.rm = TRUE)
 mean(legal$legal, na.rm = TRUE)
 
+# Legal by neighbourhood
+legal %>% 
+  group_by(neighbourhood) %>% 
+  summarize(non_PR = length(legal[legal == FALSE])) %>% 
+  st_drop_geometry() %>% 
+  left_join(neighbourhoods) %>% 
+  select(name, non_PR) %>% 
+  view()
+
 ## Neighbourhood analysis ####################################
 airbnb_neighbourhoods <- tibble(neighbourhood = character(0), active_listings = numeric(0), 
                  active_listings_LTM = numeric (0), EH_pct = numeric (0), revenue_LTM = numeric (0), 
@@ -657,7 +666,7 @@ for (n in c(1:length(areas))) {
               select(housing_units) %>% 
               sum()) +
        nrow(urban_rural_daily %>% 
-              filter(date == end_date) %>% 
+              filter(date == date_yoy) %>% 
               inner_join(FREH, .)))
   
   urban_rural[n, 12] <- neighbourhoods %>%
