@@ -23,21 +23,21 @@ exchange_rate <- mean(1.3037, 1.3010, 1.3200,
                       1.3188, 1.3046, 1.3316)
 
 ### Region comparison ###############################
+
+# revenue
+revenue <-  property_AC %>% 
+    filter(created <= end_date, scraped >= start_date, housing == TRUE) %>%
+    group_by(region) %>% 
+    summarise(region_revenue = sum(revenue, na.rm = TRUE))
          
-cities <- daily_AC %>% 
-  filter(end_date == "2019-08-31") %>% 
+cities <-
+  property_AC %>% 
+  filter(created <= end_date, scraped >= end_date, housing == TRUE) %>% 
   count(city) 
 
-region <- daily_AC %>% 
-  filter(end_date == "2019-08-31") %>% 
-  count(region)
-
-revenue <- daily_AC %>% 
-  filter(status == "R") %>% 
-  mutate(revenue = (price) * exchange_rate * (end_date - start_date)) %>% 
-  group_by(city) %>% 
-  summarise(city_revenue = sum(revenue))
-
+region <- property_AC %>% 
+  filter(created <= end_date, scraped >= end_date, housing == TRUE) %>% 
+  count(region) 
 
 ### Active daily listings ######################################################
 

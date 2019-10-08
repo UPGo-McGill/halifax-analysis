@@ -80,8 +80,8 @@ neighbourhoods <- st_intersect_summarize(
 
 con <- RPostgres::dbConnect(
   RPostgres::Postgres(),
-  user = "charlottebelot",
-  password = "iR7AXqmyKmChXCtFMMjyzjbH",
+  user = "amybolt",
+  password = "",
   host = "025wpgs.campus.mcgill.ca",
   dbname = "airdna")
 
@@ -117,10 +117,20 @@ ML_daily <-
   collect()
 
 # Atlantic Canada
+property_AC <- 
+  property_all %>% filter(country == "Canada", region %in% c("Nova Scotia", "New Brunswick", 
+                                                                      "Prince Edward Island", "Newfoundland and Labrador")) %>% 
+  collect()
+
+property_AC <-  property_AC %>% 
+  filter(!is.na(listing_type)) %>% 
+  select(property_ID:longitude, ab_property:ha_host, bedrooms, city, region) %>% 
+  st_as_sf(coords = c("longitude", "latitude"), crs = 4326) %>%
+  st_transform(32617)
+
 daily_AC <- 
   daily_all %>% 
-  filter(country == "Canada", region %in% c("Nova Scotia", "New Brunswick", 
-                                            "Prince Edward Island", "Newfoundland and Labrador")) %>% 
+  filter(property_ID %in% !! property_AC$property_ID) %>% 
   collect()
 
 rm(con, daily_all, property_all)
@@ -137,6 +147,13 @@ daily <-
 
 daily <- 
   daily %>% 
+  filter(date >= created, date - 30 <= scraped, status != "U")
+
+daily_AC <- 
+  strr_expand(daily_AC, cores = 4)
+
+daily_AC <- 
+  daily_AC %>% 
   filter(date >= created, date - 30 <= scraped, status != "U")
 
 
@@ -166,6 +183,14 @@ property <-
   summarize(revenue = sum(price) * exchange_rate) %>% 
   select(property_ID, revenue) %>% 
   left_join(property, .)
+
+property_AC <- 
+  daily_AC %>% 
+  filter(date >= start_date, status == "R") %>% 
+  group_by(property_ID) %>% 
+  summarize(revenue = sum(price) * exchange_rate) %>% 
+  select(property_ID, revenue) %>% 
+  left_join(property_AC, .)
 
 
 ## Create last twelve months property file
@@ -246,3 +271,4 @@ save(daily_compressed, file = "data/HRM_daily_compressed.Rdata")
 save(CTs_halifax, file = "data/CTs_halifax.Rdata")
 save(neighbourhoods, file = "data/HRM_neighbourhoods.Rdata")
 save(daily_AC, file = "data/daily_AC.Rdata")
+save(property_AC, file = "data/property_AC.Rdata")
