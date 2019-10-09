@@ -13,6 +13,7 @@ load("data/HRM_GH.Rdata")
 load("data/HRM_FREH.Rdata")
 load("data/CTs_halifax.Rdata")
 load("data/neighbourhoods.Rdata")
+load("data/legal.Rdata")
 
 # Set up dates
 start_date <- "2018-09-01"
