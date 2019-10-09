@@ -12,6 +12,7 @@ load("data/HRM_streets.Rdata")
 load("data/HRM_GH.Rdata")
 load("data/HRM_FREH.Rdata")
 load("data/CTs_halifax.Rdata")
+load("data/neighbourhoods.Rdata")
 
 # Set up dates
 start_date <- "2018-09-01"
@@ -370,6 +371,31 @@ CTs_halifax %>%
           rect = element_blank())
   
 ### FIGURE 12 - urban/rural
+  neighbourhoods %>% 
+    group_by(urban_rural) %>% 
+    st_buffer(0) %>% 
+    summarize(count = n()) %>% 
+    ggplot() + 
+    geom_sf(aes(fill = urban_rural, geometry = geometry)) + 
+           scale_fill_manual(values = c("darkblue", "dodgerblue4", "steelblue3", "lightcyan3")) +
+    #geom_sf(data = HRM_streets, colour = alpha("grey", 0.5)) +
+    theme(legend.position = "bottom",
+          legend.spacing.y = unit(10, "pt"),
+          axis.ticks = element_blank(),
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
+          rect = element_blank())
+    
   
 ### FIGURE 13 - neighbourhoods
+  neighbourhoods %>% 
+    ggplot() + 
+    geom_sf(fill = "white", color = gray(0.5)) +
+  geom_sf(data = HRM_streets, colour = alpha("grey", 0.5)) +
+    theme(legend.position = "bottom",
+          legend.spacing.y = unit(10, "pt"),
+          axis.ticks = element_blank(),
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
+          rect = element_blank())
   
