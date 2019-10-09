@@ -295,11 +295,12 @@ for (n in c(1:nrow(CTs_halifax))) {
                                            nrow(CT_daily %>% 
                                            filter(date == end_date) %>% 
                                            inner_join(FREH, .))
- }
+}
+
 
 CTs_halifax <- housing_loss_CT %>% 
-  mutate(housing_loss_pct = housing_loss/households) %>% 
-  left_join(CTs_halifax)
+  left_join(CTs_halifax) %>% 
+  mutate(housing_loss_pct = housing_loss/households)
 
 CTs_halifax %>% 
   ggplot() +
@@ -367,4 +368,8 @@ CTs_halifax %>%
           axis.text.x = element_blank(),
           axis.text.y = element_blank(),
           rect = element_blank())
+  
+### FIGURE 12 - urban/rural
+  
+### FIGURE 13 - neighbourhoods
   

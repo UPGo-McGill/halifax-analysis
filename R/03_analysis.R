@@ -24,7 +24,6 @@ exchange_rate <- mean(1.3037, 1.3010, 1.3200,
 
 ### Region comparison ###############################
 
-# revenue
 revenue <-  property_AC %>% 
     filter(created <= end_date, scraped >= start_date, housing == TRUE) %>%
     group_by(region) %>% 
@@ -38,6 +37,9 @@ cities <-
 region <- property_AC %>% 
   filter(created <= end_date, scraped >= end_date, housing == TRUE) %>% 
   count(region) 
+
+canada_population <- 
+  get_census("CA16", regions = list(PR = c("10", "11", "12", "13")), level = "CSD")
 
 ### Active daily listings ######################################################
 
@@ -516,7 +518,7 @@ airbnb_neighbourhoods %>%
   filter(active_listings >= 50) %>% 
   arrange(desc(active_listings_yoy)) %>% 
   slice(1:10) %>% 
-  select(name, active_listings_oy)
+  select(name, active_listings_yoy)
 
 # Revenue_LTM
 airbnb_neighbourhoods %>% 
@@ -542,6 +544,33 @@ airbnb_neighbourhoods %>%
   arrange(desc(housing_loss_yoy)) %>% 
   slice(1:10) %>% 
   select(name, housing_loss_yoy)
+
+# Non - principal residences / active listings
+airbnb_neighbourhoods <- legal %>% 
+group_by(neighbourhood) %>% 
+  summarize(non_PR = length(legal[legal == FALSE])) %>% 
+  st_drop_geometry() %>% 
+  left_join(airbnb_neighbourhoods) 
+
+airbnb_neighbourhoods <- airbnb_neighbourhoods %>% 
+  mutate(non_PR_pct_listings = non_PR/active_listings) 
+
+airbnb_neighbourhoods <- legal %>% 
+  filter(legal == FALSE) %>% 
+  group_by(neighbourhood) %>% 
+  summarize(housing_returned = n()) %>% 
+  st_drop_geometry() %>% 
+  left_join(airbnb_neighbourhoods) %>% 
+  mutate(housing_returned_pct = housing_returned/households) 
+
+# Neighbourhood table with all
+airbnb_neighbourhoods %>% 
+  arrange(desc(active_listings)) %>% 
+  slice(1:10) %>% 
+  select(name, active_listings, active_listings_pct, active_listings_yoy,
+         revenue_LTM, housing_loss, housing_loss_pct, housing_loss_yoy, non_PR, 
+         non_PR_pct_listings, housing_returned, housing_returned_pct) %>% 
+  view()
 
 ## Urban/rural comparison ########################
 areas <- c("halifax", "dartmouth", "other_urban", "rural")
