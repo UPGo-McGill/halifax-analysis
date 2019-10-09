@@ -12,7 +12,7 @@ HRM <-
 streets <- 
   (getbb("Halifax Nova Scotia") * c(1.01, 0.99, 0.99, 1.01)) %>% 
   opq(timeout = 200) %>% 
-  add_osm_feature(key = "highway", value = c("secondary", "tertiary")) %>% 
+  add_osm_feature(key = "highway") %>% 
   osmdata_sf()
 
 HRM_streets <- 
@@ -24,7 +24,7 @@ HRM_streets <-
   select(osm_id, name, geometry)
 
 neighbourhoods <-
-  read_sf(dsn = "data", layer = "halifax")%>%
+  read_sf(dsn = "data", layer = "halifax") %>%
   st_transform(32617) %>% 
   select(id = OBJECTID, neighbourhood = OLD_DIST, geometry) %>% 
   group_by(neighbourhood) %>% 

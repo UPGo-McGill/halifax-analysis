@@ -16,9 +16,9 @@ load("data/neighbourhoods.Rdata")
 load("data/legal.Rdata")
 
 # Set up dates
-start_date <- "2018-09-01"
-end_date <- "2019-08-31"
-date_yoy <- "2018-08-31"
+start_date <- as.Date("2018-09-01")
+end_date <- as.Date("2019-08-31")
+date_yoy <- as.Date("2018-08-31")
 
 # Exchange rate (average over last twelve months)
 exchange_rate <- mean(1.3037, 1.3010, 1.3200,
@@ -27,22 +27,8 @@ exchange_rate <- mean(1.3037, 1.3010, 1.3200,
                       1.3188, 1.3046, 1.3316)
 
 
-### FIGURE 1 - active listings
-active_listings_graph <-
-  active_listings_filtered %>% 
-  ggplot() +
-  geom_line(aes(date, n), colour = "#4295A8", size = 1.5) +
-  theme_minimal() +
-  scale_y_continuous(name = NULL, label = comma) +
-  theme_minimal() +
-  scale_x_date(name = NULL)
-#+
-#theme(text = element_text(family = "Futura"))
+### FIGURE 1 - spatial distribution of listings ################################
 
-ggsave("output/figure_1.pdf", plot = active_listings_graph, width = 8, 
-       height = 5, units = "in", useDingbats = FALSE)
-
-### FIGURE 2 - spatial distribution of listings 
 property_in_HRM <-
   property %>% 
   select(-revenue) %>% 
@@ -107,15 +93,38 @@ map <-
         axis.ticks = element_blank(),
         axis.text.x = element_blank(),
         axis.text.y = element_blank(),
-        rect = element_blank())
-#text = element_text(family = "Futura", face = "plain"),
-# legend.title = element_text(family = "Futura", face = "bold", 
-#                           size = 10),
-#legend.text = element_text(family = "Futura", size = 10),
-#strip.text = element_text(family = "Futura", face = "bold", size = 12)) 
+        rect = element_blank(),
+        text = element_text(family = "Futura", face = "plain"),
+        legend.title = element_text(family = "Futura", face = "bold", 
+                                    size = 10),
+        legend.text = element_text(family = "Futura", size = 10),
+        strip.text = element_text(family = "Futura", face = "bold", size = 12))
 
-ggsave("output/figure_3.pdf", plot = map, width = 8, height = 9, units = "in",
+ggsave("output/figure_1.pdf", plot = map, width = 8, height = 9, units = "in",
        useDingbats = FALSE)
+
+
+
+### FIGURE 2 - active listings #################################################
+
+active_listings_graph <-
+  daily %>% 
+  filter(housing == TRUE, status != "U", date >= created, 
+         date <= scraped) %>% 
+  count(date) %>% 
+  mutate(n = data.table::frollmean(n, 7)) %>% 
+  ggplot() +
+  geom_line(aes(date, n), colour = "#A84268", size = 1.5) +
+  theme_minimal() +
+  scale_y_continuous(name = NULL, label = scales::comma) +
+  theme_minimal() +
+  scale_x_date(name = NULL, limits = c(as.Date("2016-05-08"), NA)) +
+  theme(text = element_text(family = "Futura"))
+
+ggsave("output/figure_2.pdf", plot = active_listings_graph, width = 8, 
+       height = 5, units = "in", useDingbats = FALSE)
+
+
 
 ## FIGURE 3 - bedroom breakdowns
 
