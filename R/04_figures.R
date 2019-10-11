@@ -73,7 +73,7 @@ property_2019 <-
 map <- 
   rbind(property_2016, property_2017, property_2018, property_2019) %>%
   ggplot() +
-  geom_sf(data = HRM_streets, colour = alpha("grey", 0.5)) +
+  geom_sf(data = HRM_streets, colour = alpha("grey", 0.3), lwd = 0.2) +
   geom_sf(aes(size = revenue, colour = listing_type), alpha = 0.2, 
           show.legend = "point") +
   facet_wrap(vars(Year), nrow = 2) +
@@ -126,7 +126,79 @@ ggsave("output/figure_2.pdf", plot = active_listings_graph, width = 8,
 
 
 
-## FIGURE 3 - bedroom breakdowns
+### FIGURE 3 - neighbourhoods ##################################################
+
+names <- read_csv("data/names.csv")
+
+neighbourhoods <- 
+  neighbourhoods %>% 
+  select(-name) %>% 
+  left_join(names) %>% 
+  mutate(urban_rural = case_when(
+    urban_rural == "dartmouth" ~ "Dartmouth",
+    urban_rural == "halifax" ~ "Halifax",
+    urban_rural == "other_urban" ~ "Suburban",
+    urban_rural == "rural" ~ "Rural",
+    TRUE ~ urban_rural
+  ))
+
+main_neighbourhood_map <-
+  ggplot(neighbourhoods) + 
+  geom_sf(aes(fill = urban_rural), color = gray(0.5)) +
+  ggrepel::geom_text_repel(
+    aes(x = neighbourhoods %>% 
+          filter(!urban_rural %in% c("Dartmouth", "Halifax")) %>%
+          mutate(geometry = st_centroid(geometry)) %>% 
+          st_coordinates() %>% 
+          `[`(,1),
+        y = neighbourhoods %>% 
+          filter(!urban_rural %in% c("Dartmouth", "Halifax")) %>% 
+          mutate(geometry = st_centroid(geometry)) %>% 
+          st_coordinates() %>% 
+          `[`(,2),
+        label = name),
+    data = neighbourhoods %>% 
+      filter(!urban_rural %in% c("Dartmouth", "Halifax")),
+    size = 2) +
+  scale_fill_brewer(name = "Sub-area", palette = "Accent") +
+  theme(legend.position = "bottom",
+        legend.spacing.y = unit(10, "pt"),
+        axis.ticks = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        rect = element_blank())
+
+# inset_neighbourhood_map <- 
+  ggplot(neighbourhoods) +
+  geom_sf(aes(fill = urban_rural), color = gray(0.5)) +
+  ggrepel::geom_text_repel(aes(x = neighbourhoods %>% 
+                                 mutate(geometry = st_centroid(geometry)) %>% 
+                                 st_coordinates() %>% 
+                                 `[`(,1),
+                               y = neighbourhoods %>% 
+                                 mutate(geometry = st_centroid(geometry)) %>% 
+                                 st_coordinates() %>% 
+                                 `[`(,2),
+                               label = neighbourhood)) +
+  scale_fill_brewer(palette = "Accent") +
+  theme(legend.position = "none",
+        legend.spacing.y = unit(10, "pt"),
+        axis.ticks = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        rect = element_blank()) +
+  gg_bbox(neighbourhoods %>% filter(urban_rural %in% c("dartmouth", "halifax")))
+
+  ggsave("output/figure_3.pdf", plot = main_neighbourhood_map, width = 8, 
+         height = 5, units = "in", useDingbats = FALSE)
+  
+
+
+### FIGURE 4 - bedroom breakdowns ##############################################
 
 var <- filter(property, created <= end_date, scraped >= end_date, 
               housing == TRUE, listing_type == "Entire home/apt")$bedrooms
@@ -139,29 +211,29 @@ categ_table <- c(25, 132, 128, 84, 21, 10)
 names(categ_table) <- c("0 (studio)", "1",  "2", "3", "4", "5+")
 df$category <- factor(rep(names(categ_table), categ_table))  
 
-bedroom_graph <-
+bedrooms_graph <-
   ggplot(df, aes(x = x, y = y, fill = category)) +
   geom_tile(color = "white", size = 0.5) +
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0), trans = 'reverse') +
   scale_fill_manual(name = "Bedrooms", 
-                    values = c("#4295A8", "#B4656F", "#C7F2A7", "#96897B",
-                               "#DFD5A5", "#FFCAB1")) +
+                    values = c("#9DBF9E", "#A84268", "#FCB97D", "#C0BCB5",
+                               "#4A6C6F", "#FF5E5B")) +
   theme(plot.title = element_text(size = rel(1.2)),
         panel.border = element_rect(size = 1, fill = NA),
         axis.text = element_blank(),
         axis.title = element_blank(),
         axis.ticks = element_blank(),
-        legend.position = "bottom")
-#   legend.title = element_text(family = "Futura", face = "bold",
-#                           size = 10),
-#  legend.text = element_text(family = "Futura", size = 10)
-# )
+        legend.position = "bottom", 
+        legend.title = element_text(family = "Futura", face = "bold", 
+                                    size = 10),
+        legend.text = element_text(family = "Futura", size = 10))
 
-ggsave("output/figure_4.pdf", plot = bedroom_graph, width = 8, 
+ggsave("output/figure_4.pdf", plot = bedrooms_graph, width = 8, 
        height = 5, units = "in", useDingbats = FALSE)
 
-### FIGURE 4 - host revenue percentiles graph
+
+### FIGURE 4 - host revenue percentiles graph ##################################
 
 revenue_graph <-
   daily %>%
@@ -180,27 +252,30 @@ revenue_graph <-
                              levels = c('Top 1%', 'Top 5%', 'Top 10%', 'Top 20%'))
   ) %>% 
   ggplot() +
-  geom_bar(aes(percentile, value), stat = "identity", fill = "#4295A8") +
+  geom_bar(aes(percentile, value), stat = "identity", fill = "#A84268") +
   theme_minimal() +
   scale_y_continuous(labels = scales::percent) +
   theme(axis.title.y = element_blank(),
         axis.title.x = element_blank(),
-        #text = element_text(family = "Futura", face = "plain"),
-        # legend.title = element_text(family = "Futura", face = "bold", 
-        #                            size = 10),
-        #legend.text = element_text(family = "Futura", size = 10),
+        text = element_text(family = "Futura", face = "plain"),
+        legend.title = element_text(family = "Futura", face = "bold", 
+                                    size = 10),
+        legend.text = element_text(family = "Futura", size = 10),
         legend.position = "none")
 
 ggsave("output/figure_5.pdf", plot = revenue_graph, width = 8, height = 4, 
        units = "in", useDingbats = FALSE)
 
-### FIGURE 5 - multilistings graph
+
+### FIGURE 6 - multilistings graph #############################################
+
 ML_summary <- 
   daily %>% 
   group_by(date) %>% 
   summarize(Listings = mean(ML),
-            Revenue = sum(price * (status == "R") * ML * exchange_rate, na.rm = TRUE) / 
-              sum(price * (status == "R") * exchange_rate, na.rm = TRUE))
+            Revenue = sum(price * (status == "R") * ML * exchange_rate, 
+                          na.rm = TRUE) / sum(price * (status == "R") * 
+                                                exchange_rate, na.rm = TRUE))
 
 ML_graph <- 
   ML_summary %>% 
@@ -379,35 +454,6 @@ CTs_halifax %>%
             show.legend = TRUE) +
     scale_colour_manual(name = "Listings operating out of primary residences",
                         values = c("#B4656F", "#4295A8")) + 
-    theme(legend.position = "bottom",
-          legend.spacing.y = unit(10, "pt"),
-          axis.ticks = element_blank(),
-          axis.text.x = element_blank(),
-          axis.text.y = element_blank(),
-          rect = element_blank())
-  
-### FIGURE 12 - urban/rural
-  neighbourhoods %>% 
-    group_by(urban_rural) %>% 
-    st_buffer(0) %>% 
-    summarize(count = n()) %>% 
-    ggplot() + 
-    geom_sf(aes(fill = urban_rural, geometry = geometry)) + 
-           scale_fill_manual(values = c("darkblue", "dodgerblue4", "steelblue3", "lightcyan3")) +
-    #geom_sf(data = HRM_streets, colour = alpha("grey", 0.5)) +
-    theme(legend.position = "bottom",
-          legend.spacing.y = unit(10, "pt"),
-          axis.ticks = element_blank(),
-          axis.text.x = element_blank(),
-          axis.text.y = element_blank(),
-          rect = element_blank())
-    
-  
-### FIGURE 13 - neighbourhoods
-  neighbourhoods %>% 
-    ggplot() + 
-    geom_sf(fill = "white", color = gray(0.5)) +
-  geom_sf(data = HRM_streets, colour = alpha("grey", 0.5)) +
     theme(legend.position = "bottom",
           legend.spacing.y = unit(10, "pt"),
           axis.ticks = element_blank(),

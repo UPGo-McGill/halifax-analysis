@@ -69,8 +69,8 @@ neighbourhoods <- st_intersect_summarize(
   neighbourhoods,
   group_vars = vars(neighbourhood),
   population = population,
-  sum_vars = vars(households, university_education, housing_need, non_mover, owner_occupier,
-                  rental, official_language, citizen, white),
+  sum_vars = vars(households, university_education, housing_need, non_mover, 
+                  owner_occupier, rental, official_language, citizen, white),
   mean_vars = vars(med_income)) %>% 
   ungroup() %>% 
   drop_units() %>% 
@@ -105,7 +105,7 @@ daily_compressed <-
   filter(property_ID %in% !! property$property_ID) %>% 
   collect()
 
-# Set up multilisting file at this point as some hosts may have properties in other cities
+# Set up ML file at this point as some hosts may have properties in other cities
 ML_property <- 
   property_all %>% 
   filter(host_ID %in% !! property$host_ID) %>% 
@@ -118,8 +118,10 @@ ML_daily <-
 
 # Atlantic Canada
 property_AC <- 
-  property_all %>% filter(country == "Canada", region %in% c("Nova Scotia", "New Brunswick", 
-                                                                      "Prince Edward Island", "Newfoundland and Labrador")) %>% 
+  property_all %>% filter(country == "Canada", 
+                          region %in% c("Nova Scotia", "New Brunswick", 
+                                        "Prince Edward Island", 
+                                        "Newfoundland and Labrador")) %>% 
   collect()
 
 property_AC <-  property_AC %>% 
@@ -157,7 +159,7 @@ daily_AC <-
   filter(date >= created, date - 30 <= scraped, status != "U")
 
 
-## Run the raffle to assign a neighbourhood and a census tract #######################
+## Run the raffle to assign a neighbourhood and a census tract #################
 
 property <- 
   property %>% 
