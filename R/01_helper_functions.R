@@ -15,50 +15,15 @@ library(pbapply)
 library(osmdata)
 library(data.table)
 library(units)
+library(cowplot)
 library(devtools)
 install_github("dwachsmuth/strr")
+install_github("UPGo-McGill/upgo")
 library(strr)
-library(spatstat)
-library(polyCub)
-library(mapview)
+library(upgo)
 
-### Cancensus api #############################################################
-options(cancensus.api_key = "")
 
 ### Helper functions ###########################################################
-
-## st_intersect_summarize helper function
-st_intersect_summarize <- function(data, poly, group_vars, population, sum_vars,
-                                   mean_vars) {
-  
-  pop <- enquo(population)
-  
-  data <- data %>% 
-    mutate(CT_area = st_area(.))
-  
-  intersects <- suppressWarnings(st_intersection(data, poly)) %>%
-    mutate(int_area_pct = st_area(.data$geometry) / .data$CT_area,
-           population_int = !! pop * int_area_pct) %>%
-    group_by(!!! group_vars)
-  
-  population <- intersects %>% 
-    summarize(!! pop := sum(population_int, na.rm = TRUE))
-  
-  sums <- intersects %>%
-    summarize_at(sum_vars, ~{sum(. * int_area_pct, na.rm = TRUE) /
-        sum(population_int, na.rm = TRUE)})
-  
-  means <- intersects %>% 
-    summarize_at(mean_vars, ~{
-      sum(. * population_int, na.rm = TRUE) / sum(population_int, na.rm = TRUE)
-    })
-  
-  suppressMessages(reduce(list(population,
-                               st_drop_geometry(sums),
-                               st_drop_geometry(means)),
-                          full_join))
-  
-}
 
 # function to identify frequently rented entire homes
 strr_FREH <- function(daily, start_date, end_date, property_ID = property_ID,
@@ -87,7 +52,8 @@ strr_FREH <- function(daily, start_date, end_date, property_ID = property_ID,
       daily[, AR := .N, by = property_ID]
       daily[, R := sum(status == "R"), by = property_ID]
       daily[, list(date = as.Date(date_check, origin = "1970-01-01"),
-                   FREH = as.logical((mean(AR) >= AR_cut) * (mean(R) >= R_cut))),
+                   FREH = as.logical((mean(AR) >= AR_cut) * 
+                                       (mean(R) >= R_cut))),
             by = property_ID]
     }) %>% rbindlist()
   } else {
@@ -96,25 +62,13 @@ strr_FREH <- function(daily, start_date, end_date, property_ID = property_ID,
       daily[, AR := .N, by = property_ID]
       daily[, R := sum(status == "R"), by = property_ID]
       daily[, list(date = as.Date(date_check, origin = "1970-01-01"),
-                   FREH = as.logical((mean(AR) >= AR_cut) * (mean(R) >= R_cut))),
+                   FREH = as.logical((mean(AR) >= AR_cut) * 
+                                       (mean(R) >= R_cut))),
             by = property_ID]
     }) %>% rbindlist()
   }
 }
 
-## ggplot bounding box function
-gg_bbox <- function(geom, x1 = 0, x2 = 1, y1 = 0, y2 = 1) {
-  
-  bbox <- st_bbox(geom)
-  
-  matrix_x <- matrix(bbox[c(1,3)], nrow = 1) %*% matrix(
-    c(1 - x1, x1, 1 - x2, x2), nrow = 2)
-  
-  matrix_y <- matrix(bbox[c(2,4)], nrow = 1) %*% matrix(
-    c(1 - y1, y1, 1- y2, y2), nrow = 2)
-  
-  coord_sf(xlim = as.vector(matrix_x), ylim = as.vector(matrix_y))
-}
 
 # number of groups
 n_groups <- function(tbl) {

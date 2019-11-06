@@ -36,7 +36,9 @@ names <- read_csv("data/names.csv")
 neighbourhoods <- neighbourhoods %>% 
   left_join(names, by = "neighbourhood")
 
-### Census import #############################################################
+
+### Census import ##############################################################
+
 CTs_halifax <-
   get_census(
     dataset = "CA16", regions = list(PR = "12"), level = "CT",
@@ -62,6 +64,7 @@ CTs_halifax <- CTs_halifax %>%
     .vars = c("housing_need", "owner_occupier", "rental"),
     .funs = list(`pct_household` = ~{. / households}))
 
+
 ### Add census variables to neighbourhoods ##################################
 
 neighbourhoods <- st_intersect_summarize(
@@ -75,6 +78,30 @@ neighbourhoods <- st_intersect_summarize(
   ungroup() %>% 
   drop_units() %>% 
   mutate(households = households * population)
+
+
+### Import CMHC neighbourhoods #################################################
+
+CMHC <- read_sf("data/CMHC/CMHC_NBHD_2016-mercWGS84.shp")
+
+CMHC <- 
+  CMHC %>% 
+  filter(METCODE == "0580") %>%
+  select(-OBJECTID, -NBHDNAME_F, -NBHDNAME_1, -NBHDNAME_L, -NBHDNAME_E,
+         -NAME_FR, -GEO_LAYER_, -SHAPE_Leng, -SHAPE_Area) %>% 
+  group_by(ZONECODE) %>% 
+  summarize() %>% 
+  mutate(zone = c("Peninsula South", "Peninsula North", "Mainland South",
+                  "Mainland North", "Dartmouth North", "Dartmouth South",
+                  "Dartmouth East", "Bedford", "Sackville", "Remainder of CMA"),
+         rental_units = c(9091, 6535, 2731, 14199, 6975, 3154, 2359, 1899, 1489,
+                          1177),
+         rental_vacancy = c(0.011, 0.011, 0.012, 0.010, 0.035, 0.025, 0.017,
+                          0.011, 0.020, 0.027),
+         condo_units = round(2623 * rental_units / sum(rental_units))) %>% 
+  select(zone, rental_units, rental_vacancy, condo_units, geometry) %>% 
+  st_transform(32617)
+
 
 ### Import data from server ####################################################
 
@@ -106,6 +133,7 @@ daily_compressed <-
   collect()
 
 # Set up ML file at this point as some hosts may have properties in other cities
+
 ML_property <- 
   property_all %>% 
   filter(host_ID %in% !! property$host_ID) %>% 
@@ -136,6 +164,7 @@ daily_AC <-
   collect()
 
 rm(con, daily_all, property_all)
+
 
 ### Process files ##############################################################
 
