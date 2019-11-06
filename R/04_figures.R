@@ -261,6 +261,7 @@ ggsave("output/figure_3.pdf", plot = neighbourhood_map, width = 8, height = 6,
 
 main_nova_scotia <-
   DA_NS %>% 
+  st_simplify(preserveTopology = TRUE, dTolerance = 5) %>% 
   ggplot() +
   geom_sf(aes(fill = n / Dwellings), lwd = 0, colour = "white") +
   geom_rect(
@@ -290,7 +291,7 @@ main_nova_scotia <-
         panel.background = element_blank(),
         panel.border = element_blank(),
         legend.justification = c(0, 1),
-        legend.position = c(0, 1),
+        legend.position = c(0, .95),
         text = element_text(family = "Futura", face = "plain"),
         legend.title = element_text(family = "Futura", face = "bold", 
                                     size = 10),
