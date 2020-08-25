@@ -131,7 +131,7 @@ property_NS <-
 
 property_NS <- 
   property_NS %>% 
-  strr_raffle(DA_NS, GeoUID, Dwellings, cores = 5)
+  strr_raffle(DA_NS, GeoUID, Dwellings, cores = 4)
 
 DA_NS <- 
   property_NS %>% 

@@ -576,8 +576,8 @@ vacancy_rate_map <-
            name, 
            levels = c("Current vacancy rate",
                       "Post-regulation vacancy rate")),
-         pct = paste0(substr(value, 4, 4), ".", 
-                      substr(round(CMHC_tidy$value, 3), 5, 5), "%"),
+         pct = paste0(substr(round(value, 3), 4, 4), ".", 
+                      substr(round(value, 3), 5, 5), "%"),
          pct = if_else(nchar(pct) == 4, pct, paste0(substr(pct, 1, 2), 
                                                     "0%"))) %>% 
   filter(zone != "Remainder of CMA") %>% 
@@ -607,3 +607,4 @@ vacancy_rate_map <-
 
 ggsave("output/figure_11.pdf", plot = vacancy_rate_map, width = 8, height = 4, 
        units = "in", useDingbats = FALSE)
+embed_fonts("output/figure_11.pdf")

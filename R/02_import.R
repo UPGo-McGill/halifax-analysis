@@ -5,7 +5,7 @@ source("R/01_helper_functions.R")
 ### Build geometries ###########################################################
 
 HRM <-
-  get_census(dataset = "CA16", regions = list(CSD = "1209034"), level = "CSD",
+  cancensus::get_census(dataset = "CA16", regions = list(CSD = "1209034"), level = "CSD",
              geo_format = "sf") %>% 
   st_transform(32617)
 
